@@ -1,1 +1,19 @@
 @import 'tailwindcss';
+
+/* 디자인 토큰: 여기 적은 값은 bg-accent, text-ink 같은 클래스로 바로 쓸 수 있다 */
+@theme {
+  --font-sans: -apple-system, 'Apple SD Gothic Neo', 'Pretendard', system-ui, sans-serif;
+
+  --color-accent: #4f8cff; /* 집중 */
+  --color-rest: #3ccf9a; /* 휴식 */
+  --color-gold: #ffc861; /* 타임랩스 */
+  --color-warn: #ff6b6b; /* 포기 */
+  --color-ink: #0b1020; /* 흰 버튼 위 글자 */
+}
+
+/* 앱 전체 기본값 */
+body {
+  background: #05070f;
+  color: #fff;
+  user-select: none;
+}

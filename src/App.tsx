@@ -1,18 +1,43 @@
+import { ClipboardList, EyeIcon, MapIcon, SlidersHorizontal } from 'lucide-react';
 import { useState } from 'react';
+import { GlassPanel } from './components/ui/GlassPanel';
+import { IconButton } from './components/ui/IconButton';
+import { PillButton } from './components/ui/PillButton';
 import { ROUTE_END_X } from './constants/course';
 import { SceneCanvas } from './scene/SceneCanvas';
+
+// 아이콘 공통 크기·굵기 (프로토타입: 24px, 선 1.8)
+const ICON = { size: 24, strokeWidth: 1.8 };
 
 export default function App() {
   // 임시: 배경 확인용 슬라이더 값 (타이머 연결 후 삭제)
   const [skyT, setSkyT] = useState(0);
   const [cameraX, setCameraX] = useState(0);
   const [toBanpo, setToBanpo] = useState(true);
+  // 임시: 아이콘 활성 점 확인용 (TopBar 커밋에서 실제 동작으로 교체)
+  const [active, setActive] = useState<string | null>(null);
+  const toggle = (key: string) => setActive((cur) => (cur === key ? null : key));
 
   return (
     <div className="relative h-dvh w-full overflow-hidden bg-slate-900">
       <SceneCanvas cameraX={cameraX} skyT={skyT} toBanpo={toBanpo} />
 
-      <div className="absolute bottom-6 left-1/2 flex -translate-x-1/2 flex-col gap-2 rounded-2xl bg-black/50 px-5 py-3 text-sm text-white">
+      <div className="absolute top-3 right-3 flex gap-0.5">
+        <IconButton label="코스 미리보기" active={active === 'map'} onClick={() => toggle('map')}>
+          <MapIcon {...ICON} />
+        </IconButton>
+        <IconButton label="기록" active={active === 'history'} onClick={() => toggle('history')}>
+          <ClipboardList {...ICON} />
+        </IconButton>
+        <IconButton label="UI 숨기기" active={active === 'hide'} onClick={() => toggle('hide')}>
+          <EyeIcon {...ICON} />
+        </IconButton>
+        <IconButton label="설정" active={active === 'settings'} onClick={() => toggle('settings')}>
+          <SlidersHorizontal {...ICON} />
+        </IconButton>
+      </div>
+
+      <GlassPanel className="absolute bottom-6 left-1/2 flex -translate-x-1/2 flex-col gap-2 px-5 py-4 text-sm">
         <label className="flex items-center justify-between gap-3">
           하늘 {skyT.toFixed(2)}
           <input
@@ -37,14 +62,14 @@ export default function App() {
             className="w-64"
           />
         </label>
-        <button
-          type="button"
-          onClick={() => setToBanpo((v) => !v)}
-          className="rounded-full border border-white/40 py-1"
-        >
-          방향: {toBanpo ? '→ 반포' : '← 여의나루'}
-        </button>
-      </div>
+        <div className="mt-1 flex justify-center gap-2">
+          <PillButton onClick={() => setToBanpo((v) => !v)}>
+            방향: {toBanpo ? '→ 반포' : '← 여의나루'}
+          </PillButton>
+          <PillButton variant="primary">출발</PillButton>
+          <PillButton variant="danger">포기</PillButton>
+        </div>
+      </GlassPanel>
     </div>
   );
 }
