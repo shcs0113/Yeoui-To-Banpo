@@ -61,7 +61,7 @@ function startFocus(state: TimerState, now: number, run: boolean): TimerState {
 }
 
 // 지금 시점의 남은 시간 (달리는 중이면 endAt으로 계산, 멈춰 있으면 저장된 값)
-function remainingAt(state: TimerState, now: number): number {
+export function remainingAt(state: TimerState, now: number): number {
   if (state.status === 'running' && state.endAt !== null) {
     return Math.max(0, state.endAt - now);
   }
