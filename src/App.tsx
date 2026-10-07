@@ -1,5 +1,7 @@
 import { ClipboardList, EyeIcon, MapIcon, SlidersHorizontal } from 'lucide-react';
 import { useState } from 'react';
+import { Badge } from './components/ui/Badge';
+import { CycleDots } from './components/ui/CycleDots';
 import { GlassPanel } from './components/ui/GlassPanel';
 import { IconButton } from './components/ui/IconButton';
 import { PillButton } from './components/ui/PillButton';
@@ -38,6 +40,13 @@ export default function App() {
       </div>
 
       <GlassPanel className="absolute bottom-6 left-1/2 flex -translate-x-1/2 flex-col gap-2 px-5 py-4 text-sm">
+        {/* 임시: 배지·사이클 점 확인용 */}
+        <div className="mb-1 flex flex-wrap items-center justify-center gap-3">
+          <Badge tone="focus">집중 · → 반포</Badge>
+          <Badge tone="rest">휴식 · 반포</Badge>
+          <Badge tone="lapse">타임랩스</Badge>
+          <CycleDots total={4} current={1} />
+        </div>
         <label className="flex items-center justify-between gap-3">
           하늘 {skyT.toFixed(2)}
           <input
