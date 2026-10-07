@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { drawScene } from './drawScene';
+import type { LabelMode } from './layers/bridges';
 import { approach, laneFor } from './lane';
 import { makeView } from './projection';
 
@@ -8,6 +9,7 @@ export interface SceneInput {
   cameraX: number;
   skyT: number;
   toBanpo: boolean;
+  labels?: LabelMode; // 기본: 전부
 }
 
 interface Props {
@@ -53,9 +55,15 @@ export function SceneCanvas({ getScene }: Props) {
     const frame = (ms: number) => {
       const dt = Math.min(0.1, (ms - lastMs) / 1000); // 탭이 멈췄다 돌아와도 한 번에 크게 튀지 않게
       lastMs = ms;
-      const { cameraX, skyT, toBanpo } = latest.current(Date.now());
+      const { cameraX, skyT, toBanpo, labels = 'all' } = latest.current(Date.now());
       bikeZ = approach(bikeZ, laneFor(toBanpo), dt);
-      drawScene(ctx, makeView(width, height, cameraX), { skyT, time: ms / 1000, bikeZ, toBanpo });
+      drawScene(ctx, makeView(width, height, cameraX), {
+        skyT,
+        time: ms / 1000,
+        bikeZ,
+        toBanpo,
+        labels,
+      });
       frameId = requestAnimationFrame(frame);
     };
     frameId = requestAnimationFrame(frame);

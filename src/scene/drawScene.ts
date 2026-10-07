@@ -1,5 +1,5 @@
 import { drawBike } from './layers/bike';
-import { drawBridges } from './layers/bridges';
+import { type LabelMode, drawBridges } from './layers/bridges';
 import { drawCity } from './layers/city';
 import { drawMountains } from './layers/mountains';
 import { drawPath } from './layers/path';
@@ -12,12 +12,13 @@ import { ramp } from './color';
 import { lightAt, showLevel } from './lighting';
 import type { View } from './projection';
 
-// 한 프레임에 필요한 값 (카메라, 화면 정보는 View에 따로)
+// 한 프레임에 필요한 값 (카메라·화면 정보는 View에 따로)
 export interface Frame {
-  skyT: number; // 하늘 0 낮 -> 0.5 밤 -> 1 아침
-  time: number; // 경과 초 (반짝임, 흔들림, 지하철용)
+  skyT: number; // 하늘 0 낮 → 0.5 밤 → 1 아침
+  time: number; // 경과 초 (반짝임·흔들림·지하철용)
   bikeZ: number; // 자전거가 달리는 차선 깊이
   toBanpo: boolean; // 자전거 방향
+  labels: LabelMode; // 다리 이름표를 어디까지 보여줄지
 }
 
 // 한 프레임 그리기. 뒤(먼 것)부터 앞(가까운 것) 순서로 덧칠한다
@@ -36,7 +37,7 @@ export function drawScene(ctx: CanvasRenderingContext2D, view: View, frame: Fram
   if (show > 0 && nearYeoui > 0) drawFireworks(ctx, view, time, show * nearYeoui); // 강 건너 하늘
 
   drawRiver(ctx, view, light, time);
-  drawBridges(ctx, view, light, time);
+  drawBridges(ctx, view, light, time, frame.labels);
   if (show > 0 && nearBanpo > 0) drawFountain(ctx, view, time, show * nearBanpo); // 다리 앞 강물
   drawTrees(ctx, view, light);
   drawPath(ctx, view, light);

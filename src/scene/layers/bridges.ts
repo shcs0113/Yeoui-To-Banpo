@@ -8,12 +8,21 @@ const Z_END = 1060; // 강 건너편까지
 const SLICE = 20; // 다리를 20m씩 잘라서 먼 쪽부터 그린다
 const VISIBLE_RANGE = 2600; // 이보다 멀리 있는 다리는 건너뛴다
 
+// 다리 이름표: 전부 · 코스 위 다리만(장식용 마포대교 숨김) · 없음
+export type LabelMode = 'all' | 'route' | 'none';
+
 // 카메라에서 먼 다리부터 그려야 가까운 다리가 앞을 덮는다
-export function drawBridges(ctx: CanvasRenderingContext2D, view: View, light: Light, time: number) {
+export function drawBridges(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  light: Light,
+  time: number,
+  labels: LabelMode,
+) {
   const sorted = [...BRIDGES].sort((a, b) => Math.abs(b.x - view.camX) - Math.abs(a.x - view.camX));
   for (const b of sorted) {
     if (Math.abs(b.x - view.camX) > VISIBLE_RANGE) continue;
-    drawBridge(ctx, view, light, time, b);
+    drawBridge(ctx, view, light, time, b, labels);
   }
 }
 
@@ -27,6 +36,7 @@ function drawBridge(
   light: Light,
   time: number,
   b: Bridge,
+  labels: LabelMode,
 ) {
   // 다리 양쪽 가장자리: 카메라에서 먼 쪽이 먼저
   const edges = [b.x - b.w / 2, b.x + b.w / 2].sort(
@@ -35,7 +45,7 @@ function drawBridge(
 
   if (b.island) drawIsland(ctx, view, light, b, b.island);
 
-  // 먼 조각부터 가까운 조각 순서로: 교각 -> 상판 -> 난간
+  // 먼 조각부터 가까운 조각 순서로: 교각 → 상판 → 난간
   for (let za = Math.floor((Z_END - SLICE) / SLICE) * SLICE; za >= Z_START; za -= SLICE) {
     const zb = Math.min(Z_END, za + SLICE);
     const pierZ = Math.round(za / b.span) * b.span;
@@ -83,7 +93,7 @@ function drawBridge(
 
   if (light.night > 0.03) drawLamps(ctx, view, light, b, edges[1]);
   if (b.style === 'dongjak') drawTrain(ctx, view, light, time, b);
-  drawLabel(ctx, view, b);
+  drawLabel(ctx, view, b, labels);
 }
 
 // 노들섬 (한강대교 아래)
@@ -293,9 +303,10 @@ function drawTrain(
   );
 }
 
-// 다리 이름표: 배경 없이 글자 + 아래화살표 (풍경의 일부라 앞의 가로등,나무에 가려질 수 있다)
-function drawLabel(ctx: CanvasRenderingContext2D, view: View, b: Bridge) {
-  if (b.deco && Math.abs(b.x - view.camX) >= 900) return; // 장식용 다리는 가까울 때만
+// 다리 이름표: 배경 없이 글자 + 아래표시 (풍경의 일부라 앞의 가로등, 나무에 가려질 수 있다)
+function drawLabel(ctx: CanvasRenderingContext2D, view: View, b: Bridge, labels: LabelMode) {
+  if (labels === 'none') return;
+  if (b.deco && (labels === 'route' || Math.abs(b.x - view.camX) >= 900)) return; // 장식용 다리는 가까울 때만
   const [x, y] = project(view, [b.x, b.yt + 45, 900]);
   if (x < -80 || x > view.width + 80) return;
   ctx.save();
