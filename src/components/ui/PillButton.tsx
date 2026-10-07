@@ -33,7 +33,7 @@ export function PillButton({
     <button
       type={type}
       className={cx(
-        'cursor-pointer rounded-full border-[1.5px] font-bold whitespace-nowrap backdrop-blur-[3px] transition [text-shadow:0_1px_8px_rgba(0,0,0,.35)] hover:-translate-y-px disabled:cursor-default disabled:opacity-40 disabled:hover:translate-y-0',
+        'inline-flex cursor-pointer items-center gap-1.5 rounded-full border-[1.5px] font-bold whitespace-nowrap backdrop-blur-[3px] transition [text-shadow:0_1px_8px_rgba(0,0,0,.35)] hover:-translate-y-px disabled:cursor-default disabled:opacity-40 disabled:hover:translate-y-0',
         VARIANTS[variant],
         SIZES[size],
         className,
