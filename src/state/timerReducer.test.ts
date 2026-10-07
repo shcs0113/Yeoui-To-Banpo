@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { initState, timerReducer } from './timerReducer';
+import { SKIP_LAPSE_MS, initState, timerReducer } from './timerReducer';
 import type { TimerAction, TimerState } from './types';
 
 const MIN = 60_000;
@@ -111,5 +111,67 @@ describe('TICK: 집중 -> 휴식 -> 다음 사이클', () => {
     const fast = timerReducer({ ...initState(), speed: 60 }, { type: 'START', now: 0 });
     const s = timerReducer(fast, tick(30_000));
     expect(s.history[0].elapsedMs).toBe(30 * MIN);
+  });
+});
+
+describe('GIVE_UP: 구간 포기', () => {
+  it('10분 달리고 포기하면 출발선으로 돌아가고 미완료 기록이 남는다', () => {
+    const s = run(started(0), { type: 'GIVE_UP', now: 10 * MIN });
+    expect(s.phase).toBe('focus');
+    expect(s.status).toBe('idle');
+    expect(s.cycle).toBe(0);
+    expect(s.remainingMs).toBe(30 * MIN);
+    expect(s.history[0]).toMatchObject({ kind: 'focus', completed: false, elapsedMs: 10 * MIN });
+  });
+
+  it('포기 후 다시 출발하면 30분을 처음부터 달린다', () => {
+    const s = run(started(0), { type: 'GIVE_UP', now: 10 * MIN }, { type: 'START', now: 12 * MIN });
+    expect(s.status).toBe('running');
+    expect(s.endAt).toBe(42 * MIN);
+  });
+
+  it('멈춘 상태에서 포기하면 멈춘 시점까지를 기록한다', () => {
+    const s = run(started(0), { type: 'PAUSE', now: 8 * MIN }, { type: 'GIVE_UP', now: 20 * MIN });
+    expect(s.history[0].elapsedMs).toBe(8 * MIN);
+  });
+
+  it('휴식 중에는 포기할 수 없다', () => {
+    const s = run(started(0), tick(30 * MIN));
+    expect(timerReducer(s, { type: 'GIVE_UP', now: 31 * MIN })).toBe(s);
+  });
+});
+
+describe('SKIP_BREAK: 휴식 건너뛰기', () => {
+  // 30분 집중 → 휴식 2분째에 건너뛰기
+  const skipped = () =>
+    run(started(0), tick(30 * MIN), { type: 'SKIP_BREAK', now: 32 * MIN, fromT: 0.5 });
+
+  it('건너뛰면 5초짜리 타임랩스가 시작된다', () => {
+    const s = skipped();
+    expect(s.phase).toBe('lapse');
+    expect(s.lapse).toEqual({ fromT: 0.5, startAt: 32 * MIN, endAt: 32 * MIN + SKIP_LAPSE_MS });
+  });
+
+  it('타임랩스 도중에는 넘어가지 않는다', () => {
+    const s = skipped();
+    expect(timerReducer(s, tick(32 * MIN + 3_000))).toBe(s);
+  });
+
+  it('타임랩스가 끝나면 다음 사이클이 시작되고 휴식은 미완료로 남는다', () => {
+    const s = run(skipped(), tick(32 * MIN + SKIP_LAPSE_MS));
+    expect(s.phase).toBe('focus');
+    expect(s.cycle).toBe(1);
+    expect(s.lapse).toBeNull();
+    expect(s.history[0]).toMatchObject({ kind: 'break', completed: false, elapsedMs: 2 * MIN });
+  });
+
+  it('타임랩스 도중에는 일시정지할 수 없다', () => {
+    const s = skipped();
+    expect(timerReducer(s, { type: 'PAUSE', now: 32 * MIN + 1_000 })).toBe(s);
+  });
+
+  it('집중 중에는 건너뛸 수 없다', () => {
+    const s = started(0);
+    expect(timerReducer(s, { type: 'SKIP_BREAK', now: MIN, fromT: 0 })).toBe(s);
   });
 });

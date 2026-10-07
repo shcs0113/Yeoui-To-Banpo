@@ -2,6 +2,8 @@ import type { HistoryRecord, TimerAction, TimerState } from './types';
 
 const MIN = 60_000;
 
+export const SKIP_LAPSE_MS = 5_000; // 휴식 건너뛰기 타임랩스 길이
+
 // 분 -> 실제로 기다릴 ms
 export const minToMs = (min: number, speed: number) => (min * MIN) / speed;
 
@@ -35,6 +37,14 @@ function startFocus(state: TimerState, now: number, run: boolean): TimerState {
     startedAt: run ? now : null,
     lapse: null,
   };
+}
+
+// 지금 시점의 남은 시간 (달리는 중이면 endAt으로 계산, 멈춰 있으면 저장된 값)
+function remainingAt(state: TimerState, now: number): number {
+  if (state.status === 'running' && state.endAt !== null) {
+    return Math.max(0, state.endAt - now);
+  }
+  return state.remainingMs;
 }
 
 // 지금 구간을 기록 한 줄로 만들어 맨 앞에 붙인 새 배열을 돌려준다
@@ -97,9 +107,54 @@ export function timerReducer(state: TimerState, action: TimerAction): TimerState
       };
     }
 
+    case 'GIVE_UP': {
+      // 집중 중(달리는 중, 멈춘 중)에만. 이번 구간 출발선으로 돌아간다
+      if (state.phase !== 'focus' || state.status === 'idle') return state;
+      const history = addRecord(
+        { ...state, remainingMs: remainingAt(state, action.now) },
+        action.now,
+        'focus',
+        false,
+      );
+      return {
+        ...state,
+        history,
+        status: 'idle',
+        remainingMs: state.durationMs,
+        endAt: null,
+        startedAt: null,
+      };
+    }
+
+    case 'SKIP_BREAK': {
+      // 휴식 중에만. 5초 타임랩스로 아침을 만든 뒤 다음 사이클로
+      if (state.phase !== 'break') return state;
+      return {
+        ...state,
+        phase: 'lapse',
+        status: 'running',
+        remainingMs: remainingAt(state, action.now),
+        endAt: null,
+        lapse: { fromT: action.fromT, startAt: action.now, endAt: action.now + SKIP_LAPSE_MS },
+      };
+    }
+
     case 'TICK': {
-      // 달리는 중인 집중·휴식만 처리
-      if (state.status !== 'running' || state.endAt === null) return state;
+      if (state.status !== 'running') return state;
+
+      // 건너뛰기 타임랩스가 끝나면 → 다음 사이클 집중
+      if (state.phase === 'lapse') {
+        if (state.lapse === null || action.now < state.lapse.endAt) return state;
+        const history = addRecord(state, action.now, 'break', false);
+        return startFocus(
+          { ...state, history, cycle: state.cycle + 1 },
+          action.now,
+          action.autoStart,
+        );
+      }
+
+      // 여기부터는 달리는 중인 집중·휴식
+      if (state.endAt === null) return state;
       if (state.phase !== 'focus' && state.phase !== 'break') return state;
 
       // 아직 안 끝났으면 상태는 그대로
