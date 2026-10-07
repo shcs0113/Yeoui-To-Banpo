@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { ROUTE_END_X, derive } from './derive';
+import { ROUTE_END_X } from '../constants/course';
+import { derive } from './derive';
 import { SKIP_LAPSE_MS, initState, timerReducer } from './timerReducer';
 import type { TimerAction, TimerState } from './types';
 

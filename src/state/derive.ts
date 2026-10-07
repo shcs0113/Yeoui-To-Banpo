@@ -1,7 +1,7 @@
+import { ROUTE_END_X } from '../constants/course';
 import { SKIP_LAPSE_MS, remainingAt } from './timerReducer';
 import type { TimerState } from './types';
 
-export const ROUTE_END_X = 6800; // 반포 도착 지점 (여의나루 = 0), 단위는 장면 좌표(m)
 export const TIMELAPSE_MS = 60_000; // 휴식 마지막 1분 동안 밤 -> 아침 (가상 시간)
 
 // 화면과 배경이 쓰는 값. state에 저장하지 않고 매번 계산한다
