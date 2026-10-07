@@ -17,3 +17,47 @@ body {
   color: #fff;
   user-select: none;
 }
+
+/* 슬라이더: 손잡이·트랙은 가상 요소라서 브라우저별 CSS로 직접 꾸민다 */
+@layer components {
+  .range {
+    appearance: none;
+    width: 100%;
+    height: 22px;
+    background: transparent;
+    cursor: pointer;
+  }
+  .range::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 4px;
+    background: rgb(255 255 255 / 0.3);
+  }
+  .range::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-top: -7px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgb(79 140 255 / 0.45);
+  }
+  .range::-moz-range-track {
+    height: 4px;
+    border-radius: 4px;
+    background: rgb(255 255 255 / 0.3);
+  }
+  .range::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border: 0;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgb(79 140 255 / 0.45);
+  }
+  .range:focus-visible {
+    outline: none;
+  }
+  .range:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 6px rgb(79 140 255 / 0.7);
+  }
+}
