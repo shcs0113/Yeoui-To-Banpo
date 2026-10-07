@@ -18,3 +18,15 @@ export const mixRGB = (a: RGB, b: RGB, t: number): RGB => [
 // 캔버스가 읽는 색 문자열로
 export const rgba = (c: RGB, alpha = 1) =>
   `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${alpha})`;
+
+// HSL(색상 0~360, 채도, 밝기 0~100) -> RGB(0~255)
+export function hslToRgb(h: number, s: number, l: number): RGB {
+  const sat = s / 100;
+  const light = l / 100;
+  const a = sat * Math.min(light, 1 - light);
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    return light - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+  };
+  return [f(0) * 255, f(8) * 255, f(4) * 255];
+}

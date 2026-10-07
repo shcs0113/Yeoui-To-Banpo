@@ -1,4 +1,4 @@
-import { type RGB, clamp01, lerp, mixRGB, ramp } from './color';
+import { type RGB, clamp01, hslToRgb, lerp, mixRGB, ramp, rgba } from './color';
 
 // 하늘 시간 t(0~1)에 따른 하늘색. 사이 값은 앞뒤 키를 섞어서 만든다
 interface SkyKey {
@@ -50,4 +50,13 @@ export function lightAt(skyT: number): Light {
   const daylight = lerp(1, 0.3, night) * (1 - sunsetDip);
 
   return { top, bottom, night, stars, daylight };
+}
+
+const FOG_DISTANCE = 2600; // 이 거리(m)쯤이면 하늘색에 거의 묻힌다
+
+// 물체 색: 밤이면 어둡게, 멀수록 수평선 하늘색에 섞는다 (공기 원근법)
+export function shade(light: Light, h: number, s: number, l: number, z = 0): string {
+  const base = hslToRgb(h, s, Math.min(100, l * light.daylight));
+  const fog = Math.min(1, z / FOG_DISTANCE) * 0.8;
+  return rgba(mixRGB(base, light.bottom, fog));
 }

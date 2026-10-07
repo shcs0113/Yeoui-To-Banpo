@@ -1,3 +1,6 @@
+import { drawCity } from './layers/city';
+import { drawMountains } from './layers/mountains';
+import { drawRiver } from './layers/river';
 import { drawSky } from './layers/sky';
 import { lightAt } from './lighting';
 import type { View } from './projection';
@@ -7,5 +10,8 @@ export function drawScene(ctx: CanvasRenderingContext2D, view: View, skyT: numbe
   const light = lightAt(skyT);
   ctx.clearRect(0, 0, view.width, view.height);
   drawSky(ctx, view, light, skyT, time);
-  // 다음 커밋부터: 산, 도시 -> 강 -> 다리 -> 나무, 길, 자전거
+  drawMountains(ctx, view, light);
+  drawCity(ctx, view, light);
+  drawRiver(ctx, view, light, time);
+  // 다음 커밋부터: 다리 -> 나무·길·자전거
 }

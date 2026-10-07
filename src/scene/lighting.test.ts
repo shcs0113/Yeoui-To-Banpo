@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lightAt } from './lighting';
+import { lightAt, shade } from './lighting';
 
 describe('lightAt', () => {
   it('0과 1은 같은 낮 하늘이다 (하루가 한 바퀴 돈다)', () => {
@@ -27,5 +27,24 @@ describe('lightAt', () => {
   it('범위 밖 값은 잘라서 처리한다', () => {
     expect(lightAt(-1)).toEqual(lightAt(0));
     expect(lightAt(2)).toEqual(lightAt(1));
+  });
+});
+
+describe('shade', () => {
+  const day = lightAt(0);
+  const night = lightAt(0.55);
+
+  it('가까운 물체는 낮에 원래 색 그대로', () => {
+    expect(shade(day, 0, 100, 50)).toBe('rgba(255,0,0,1)');
+  });
+
+  it('밤에는 같은 물체가 어두워진다', () => {
+    expect(shade(night, 0, 100, 50)).toBe('rgba(77,0,0,1)'); // 밝기 50% × 0.3
+  });
+
+  it('멀수록 수평선 하늘색에 가까워진다', () => {
+    const [r, g, b] = day.bottom;
+    const far = `rgba(${Math.round(255 * 0.2 + r * 0.8)},${Math.round(g * 0.8)},${Math.round(b * 0.8)},1)`;
+    expect(shade(day, 0, 100, 50, 5000)).toBe(far);
   });
 });
