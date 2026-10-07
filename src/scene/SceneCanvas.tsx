@@ -1,21 +1,23 @@
 import { useEffect, useRef } from 'react';
 import { drawScene } from './drawScene';
+import { approach, laneFor } from './lane';
 import { makeView } from './projection';
 
 interface Props {
   cameraX: number;
   skyT: number;
+  toBanpo: boolean;
 }
 
 // 배경 캔버스. React는 캔버스를 한 번만 만들고, 그리기는 rAF 루프가 맡는다
-export function SceneCanvas({ cameraX, skyT }: Props) {
+export function SceneCanvas({ cameraX, skyT, toBanpo }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // 루프가 읽을 최신 값. ref라서 바뀌어도 리렌더가 일어나지 않는다
-  const latest = useRef({ cameraX, skyT });
+  const latest = useRef({ cameraX, skyT, toBanpo });
   useEffect(() => {
-    latest.current = { cameraX, skyT };
-  }, [cameraX, skyT]);
+    latest.current = { cameraX, skyT, toBanpo };
+  }, [cameraX, skyT, toBanpo]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -38,11 +40,17 @@ export function SceneCanvas({ cameraX, skyT }: Props) {
     observer.observe(canvas);
     resize();
 
-    // 매 프레임: 최신 값으로 장면을 다시 그린다
+    // 프레임 사이에 이어지는 값: 자전거 차선은 방향이 바뀌면 부드럽게 옮겨 간다
+    let bikeZ = laneFor(latest.current.toBanpo);
+    let lastMs = performance.now();
+
     let frameId = 0;
     const frame = (ms: number) => {
-      const { cameraX, skyT } = latest.current;
-      drawScene(ctx, makeView(width, height, cameraX), skyT, ms / 1000);
+      const dt = Math.min(0.1, (ms - lastMs) / 1000); // 탭이 멈췄다 돌아와도 한 번에 크게 튀지 않게
+      lastMs = ms;
+      const { cameraX, skyT, toBanpo } = latest.current;
+      bikeZ = approach(bikeZ, laneFor(toBanpo), dt);
+      drawScene(ctx, makeView(width, height, cameraX), { skyT, time: ms / 1000, bikeZ, toBanpo });
       frameId = requestAnimationFrame(frame);
     };
     frameId = requestAnimationFrame(frame);
