@@ -1,13 +1,12 @@
 import { useState } from 'react';
+import { SetupCard } from './components/SetupCard';
 import { TitleScreen } from './components/TitleScreen';
 import { TopBar } from './components/TopBar';
 import { Badge, type Tone } from './components/ui/Badge';
 import { CycleDots } from './components/ui/CycleDots';
 import { GlassPanel } from './components/ui/GlassPanel';
 import { PillButton } from './components/ui/PillButton';
-import { RangeField } from './components/ui/RangeField';
 import { Segmented } from './components/ui/Segmented';
-import { Stepper } from './components/ui/Stepper';
 import { Toggle } from './components/ui/Toggle';
 import { useNow } from './hooks/useNow';
 import { formatClock } from './lib/format';
@@ -15,7 +14,6 @@ import { SceneCanvas } from './scene/SceneCanvas';
 import { derive } from './state/derive';
 import { useTimer } from './state/TimerContext';
 import { TimerProvider } from './state/TimerProvider';
-import { SETTING_LIMITS } from './state/timerReducer';
 import type { Speed, TimerState } from './state/types';
 
 const SPEEDS = [1, 10, 60, 300] as const satisfies readonly Speed[];
@@ -58,8 +56,7 @@ function RidingScreen() {
   const now = useNow(250, running);
   const d = derive(state, now);
   const badge = badgeFor(state, d.toBanpo);
-  const shownMs =
-    state.phase === 'setup' ? state.settings.focusMin * 60_000 : d.remainingMs * state.speed; // 배속이어도 가상 시간으로
+  const shownMs = d.remainingMs * state.speed; // 배속이어도 가상 시간으로
 
   // 화면 상태 (타이머와 상관없는 UI 상태라 여기에 둔다)
   const [setupOpen, setSetupOpen] = useState(false); // 출발 전: 타이틀 <-> 설정 카드
@@ -69,8 +66,12 @@ function RidingScreen() {
 
   const isSetup = state.phase === 'setup';
   const showTitle = isSetup && !setupOpen;
+  const startRide = () => {
+    setSetupOpen(false); // 다음에 '처음으로' 오면 타이틀부터
+    timer.start();
+  };
   const resting = state.phase === 'break' || state.phase === 'lapse';
-  // 다리 이름표: 첫 화면엔 장식용 마포대교 숨김, UI 숨김·휴식 중엔 전부 숨김 (휴식 시계와 겹치지 않게)
+  // 다리 이름표: 첫 화면엔 장식용 마포대교 숨김, UI 숨김, 휴식 중엔 전부 숨김 (휴식 시계와 겹치지 않게)
   const labels = uiHidden || resting ? 'none' : isSetup ? 'route' : 'all';
 
   return (
@@ -95,15 +96,19 @@ function RidingScreen() {
         <TitleScreen onStart={() => setSetupOpen(true)} onPreview={() => togglePanel('preview')} />
       )}
 
-      {/* 임시 조작판: 4단계에서 화면별 컴포넌트로 나눈다 */}
-      {!showTitle && (
+      {isSetup && setupOpen && !uiHidden && (
+        <SetupCard onStart={startRide} onBack={() => setSetupOpen(false)} />
+      )}
+
+      {/* 임시 조작판: 4단계에서 화면별 컴포넌트로 나눈다 (출발 후에만) */}
+      {!isSetup && (
         <GlassPanel className="absolute bottom-4 left-1/2 flex w-[min(400px,calc(100%-32px))] -translate-x-1/2 flex-col gap-3 px-5 py-4">
           <div className="flex min-h-5 flex-wrap items-center justify-center gap-3">
             {badge && <Badge tone={badge.tone}>{badge.text}</Badge>}
             <CycleDots
               total={state.settings.cycles}
               current={state.cycle}
-              currentDone={state.phase !== 'setup' && state.phase !== 'focus'}
+              currentDone={state.phase !== 'focus'}
             />
           </div>
           <div className="text-center text-6xl font-extrabold tabular-nums">
@@ -113,32 +118,6 @@ function RidingScreen() {
             {state.phase} · {state.status} · {(d.cameraX / 1000).toFixed(2)}km · 하늘{' '}
             {d.skyT.toFixed(2)}
           </p>
-
-          {state.phase === 'setup' && (
-            <>
-              <RangeField
-                label="집중"
-                value={state.settings.focusMin}
-                {...SETTING_LIMITS.focusMin}
-                onChange={(v) => timer.updateSettings({ focusMin: v })}
-                format={(v) => `${v}분`}
-              />
-              <RangeField
-                label="휴식"
-                value={state.settings.breakMin}
-                {...SETTING_LIMITS.breakMin}
-                onChange={(v) => timer.updateSettings({ breakMin: v })}
-                format={(v) => `${v}분`}
-              />
-              <Stepper
-                label="사이클"
-                value={state.settings.cycles}
-                min={SETTING_LIMITS.cycles.min}
-                max={SETTING_LIMITS.cycles.max}
-                onChange={(v) => timer.updateSettings({ cycles: v })}
-              />
-            </>
-          )}
 
           <Toggle
             label="휴식 끝나면 다음 사이클 자동 출발"
@@ -156,13 +135,7 @@ function RidingScreen() {
           </div>
 
           <div className="flex flex-wrap justify-center gap-2">
-            <Controls
-              onStart={() => {
-                setSetupOpen(false); // 다음에 '처음으로' 오면 타이틀부터
-                timer.start();
-              }}
-            />
-            {isSetup && <PillButton onClick={() => setSetupOpen(false)}>뒤로</PillButton>}
+            <Controls onStart={startRide} />
           </div>
         </GlassPanel>
       )}
@@ -175,7 +148,7 @@ function Controls({ onStart }: { onStart: () => void }) {
   const { state, pause, resume, giveUp, skipBreak, toSetup } = useTimer();
   const { phase, status } = state;
 
-  if (phase === 'setup' || (phase === 'focus' && status === 'idle')) {
+  if (phase === 'focus' && status === 'idle') {
     return (
       <PillButton variant="primary" onClick={onStart}>
         출발
