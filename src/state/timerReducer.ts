@@ -1,8 +1,29 @@
-import type { HistoryRecord, TimerAction, TimerState } from './types';
+import type { HistoryRecord, Settings, TimerAction, TimerState } from './types';
 
 const MIN = 60_000;
 
 export const SKIP_LAPSE_MS = 5_000; // 휴식 건너뛰기 타임랩스 길이
+
+// 설정 하나의 허용 범위와 단위
+interface Limit {
+  min: number;
+  max: number;
+  step: number;
+}
+
+// 설정마다 허용 범위와 단위
+export const SETTING_LIMITS = {
+  focusMin: { min: 30, max: 60, step: 5 },
+  breakMin: { min: 5, max: 30, step: 5 },
+  cycles: { min: 1, max: 10, step: 1 },
+} as const satisfies Record<keyof Settings, Limit>;
+
+// 값을 단위에 맞춰 반올림하고 범위 안으로 자른다. 숫자가 아니면 이전 값 유지
+function snap(value: number, limit: Limit, fallback: number): number {
+  if (!Number.isFinite(value)) return fallback;
+  const stepped = Math.round((value - limit.min) / limit.step) * limit.step + limit.min;
+  return Math.min(limit.max, Math.max(limit.min, stepped));
+}
 
 // 분 -> 실제로 기다릴 ms
 export const minToMs = (min: number, speed: number) => (min * MIN) / speed;
@@ -68,6 +89,42 @@ function addRecord(
 
 export function timerReducer(state: TimerState, action: TimerAction): TimerState {
   switch (action.type) {
+    case 'UPDATE_SETTINGS': {
+      // 출발 전에만 바꿀 수 있음 (출발 후 잠금)
+      if (state.phase !== 'setup') return state;
+      const next = { ...state.settings, ...action.patch };
+      const prev = state.settings;
+      return {
+        ...state,
+        settings: {
+          focusMin: snap(next.focusMin, SETTING_LIMITS.focusMin, prev.focusMin),
+          breakMin: snap(next.breakMin, SETTING_LIMITS.breakMin, prev.breakMin),
+          cycles: snap(next.cycles, SETTING_LIMITS.cycles, prev.cycles),
+        },
+      };
+    }
+
+    case 'SET_SPEED': {
+      // 달리는 중에는 못 바꿈. 멈춘 상태면 남은 "가상 시간"이 유지되도록 다시 계산
+      if (state.status === 'running' || action.speed === state.speed) return state;
+      const ratio = state.speed / action.speed;
+      return {
+        ...state,
+        speed: action.speed,
+        durationMs: state.durationMs * ratio,
+        remainingMs: state.remainingMs * ratio,
+      };
+    }
+
+    case 'TO_SETUP':
+      // 처음 화면으로. 설정, 배속, 기록은 남긴다
+      return {
+        ...initState(),
+        settings: state.settings,
+        speed: state.speed,
+        history: state.history,
+      };
+
     case 'START': {
       // 첫 출발
       if (state.phase === 'setup') {
@@ -190,6 +247,8 @@ export function timerReducer(state: TimerState, action: TimerAction): TimerState
     }
 
     default:
+      // 모든 action을 처리했다면 여기는 절대 올 수 없다
+      action satisfies never;
       return state;
   }
 }

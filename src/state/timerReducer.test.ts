@@ -175,3 +175,67 @@ describe('SKIP_BREAK: 휴식 건너뛰기', () => {
     expect(timerReducer(s, { type: 'SKIP_BREAK', now: MIN, fromT: 0 })).toBe(s);
   });
 });
+
+describe('UPDATE_SETTINGS: 설정 변경', () => {
+  it('출발 전에는 바꿀 것만 보내서 바꿀 수 있다', () => {
+    const s = timerReducer(initState(), { type: 'UPDATE_SETTINGS', patch: { focusMin: 45 } });
+    expect(s.settings).toEqual({ focusMin: 45, breakMin: 5, cycles: 4 });
+  });
+
+  it('범위를 벗어나거나 단위가 안 맞으면 맞춰진다', () => {
+    const s = timerReducer(initState(), {
+      type: 'UPDATE_SETTINGS',
+      patch: { focusMin: 100, breakMin: 7, cycles: 0 },
+    });
+    expect(s.settings).toEqual({ focusMin: 60, breakMin: 5, cycles: 1 });
+  });
+
+  it('숫자가 아닌 값은 무시하고 이전 값을 유지한다', () => {
+    const s = timerReducer(initState(), { type: 'UPDATE_SETTINGS', patch: { focusMin: NaN } });
+    expect(s.settings.focusMin).toBe(30);
+  });
+
+  it('출발한 뒤에는 바뀌지 않는다', () => {
+    const s = started(0);
+    expect(timerReducer(s, { type: 'UPDATE_SETTINGS', patch: { cycles: 10 } })).toBe(s);
+  });
+});
+
+describe('SET_SPEED: 배속', () => {
+  it('달리는 중에는 바꿀 수 없다', () => {
+    const s = started(0);
+    expect(timerReducer(s, { type: 'SET_SPEED', speed: 60 })).toBe(s);
+  });
+
+  it('멈춘 상태에서 바꾸면 남은 가상 시간이 유지된다', () => {
+    const paused = run(started(0), { type: 'PAUSE', now: 10 * MIN });
+    const s = timerReducer(paused, { type: 'SET_SPEED', speed: 60 });
+    expect(s.speed).toBe(60);
+    expect(s.remainingMs).toBe(20_000); // 20분 ÷ 60
+    expect(s.durationMs).toBe(30_000);
+  });
+
+  it('출발 전에 바꾸면 다음 출발에 적용된다', () => {
+    const s = run(initState(), { type: 'SET_SPEED', speed: 10 }, { type: 'START', now: 0 });
+    expect(s.durationMs).toBe(3 * MIN);
+  });
+});
+
+describe('TO_SETUP: 처음으로', () => {
+  it('완주 후 처음으로 가면 설정·배속·기록은 남고 나머지는 초기화된다', () => {
+    const one = {
+      ...initState(),
+      speed: 10 as const,
+      settings: { focusMin: 40, breakMin: 5, cycles: 1 },
+    };
+    const done = run(one, { type: 'START', now: 0 }, tick(4 * MIN));
+    expect(done.phase).toBe('done');
+
+    const s = timerReducer(done, { type: 'TO_SETUP' });
+    expect(s.phase).toBe('setup');
+    expect(s.cycle).toBe(0);
+    expect(s.settings.focusMin).toBe(40);
+    expect(s.speed).toBe(10);
+    expect(s.history).toHaveLength(1);
+  });
+});
