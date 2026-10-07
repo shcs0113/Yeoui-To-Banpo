@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { initState, timerReducer } from './timerReducer';
-import type { TimerState } from './types';
+import type { TimerAction, TimerState } from './types';
 
 const MIN = 60_000;
 
@@ -51,5 +51,65 @@ describe('PAUSE / RESUME', () => {
   it('멈춘 상태가 아니면 RESUME은 무시된다', () => {
     const s = started();
     expect(timerReducer(s, { type: 'RESUME', now: 0 })).toBe(s);
+  });
+});
+
+// 여러 액션을 차례로 적용하는 도우미
+const run = (s: TimerState, ...actions: TimerAction[]) => actions.reduce(timerReducer, s);
+const tick = (now: number, autoStart = true): TimerAction => ({ type: 'TICK', now, autoStart });
+
+describe('TICK: 집중 -> 휴식 -> 다음 사이클', () => {
+  it('아직 시간이 남았으면 같은 상태를 돌려준다', () => {
+    const s = started(0);
+    expect(timerReducer(s, tick(10 * MIN))).toBe(s);
+  });
+
+  it('30분이 지나면 휴식이 시작되고 기록이 남는다', () => {
+    const s = run(started(0), tick(30 * MIN));
+    expect(s.phase).toBe('break');
+    expect(s.endAt).toBe(35 * MIN);
+    expect(s.history).toHaveLength(1);
+    expect(s.history[0]).toMatchObject({ kind: 'focus', cycle: 0, toBanpo: true, completed: true });
+  });
+
+  it('휴식이 끝나면 다음 사이클이 반대 방향으로 시작된다', () => {
+    const s = run(started(0), tick(30 * MIN), tick(35 * MIN));
+    expect(s.phase).toBe('focus');
+    expect(s.status).toBe('running');
+    expect(s.cycle).toBe(1);
+    expect(s.history[0]).toMatchObject({ kind: 'break', completed: true });
+  });
+
+  it('자동 출발이 꺼져 있으면 출발선에서 기다린다', () => {
+    const s = run(started(0), tick(30 * MIN), tick(35 * MIN, false));
+    expect(s.phase).toBe('focus');
+    expect(s.status).toBe('idle');
+    expect(s.endAt).toBeNull();
+  });
+
+  it('마지막 사이클의 집중이 끝나면 휴식 없이 완주한다', () => {
+    const one = { ...initState(), settings: { focusMin: 30, breakMin: 5, cycles: 1 } };
+    const s = run(one, { type: 'START', now: 0 }, tick(30 * MIN));
+    expect(s.phase).toBe('done');
+    expect(s.status).toBe('idle');
+  });
+
+  it('2사이클을 끝까지 달리면 기록이 3개(집중, 휴식, 집중) 남는다', () => {
+    const two = { ...initState(), settings: { focusMin: 30, breakMin: 5, cycles: 2 } };
+    const s = run(two, { type: 'START', now: 0 }, tick(30 * MIN), tick(35 * MIN), tick(65 * MIN));
+    expect(s.phase).toBe('done');
+    expect(s.history.map((r) => r.kind)).toEqual(['focus', 'break', 'focus']);
+    expect(s.history[0].toBanpo).toBe(false);
+  });
+
+  it('일시정지 중에는 시간이 지나도 넘어가지 않는다', () => {
+    const s = run(started(0), { type: 'PAUSE', now: 10 * MIN });
+    expect(timerReducer(s, tick(60 * MIN))).toBe(s);
+  });
+
+  it('배속을 써도 기록에는 가상 시간(30분)이 남는다', () => {
+    const fast = timerReducer({ ...initState(), speed: 60 }, { type: 'START', now: 0 });
+    const s = timerReducer(fast, tick(30_000));
+    expect(s.history[0].elapsedMs).toBe(30 * MIN);
   });
 });
