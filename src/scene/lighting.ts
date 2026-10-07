@@ -60,3 +60,6 @@ export function shade(light: Light, h: number, s: number, l: number, z = 0): str
   const fog = Math.min(1, z / FOG_DISTANCE) * 0.8;
   return rgba(mixRGB(base, light.bottom, fog));
 }
+
+// 도착 쇼(분수, 불꽃) 강도: 밤이 되면 켜지고, 휴식 끝 타임랩스 초반에 꺼진다
+export const showLevel = (skyT: number) => ramp(skyT, 0.46, 0.5) * (1 - ramp(skyT, 0.6, 0.66));
