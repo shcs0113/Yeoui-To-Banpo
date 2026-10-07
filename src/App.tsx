@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { RouteBar } from './components/RouteBar';
 import { SetupCard } from './components/SetupCard';
 import { TitleScreen } from './components/TitleScreen';
 import { TopBar } from './components/TopBar';
@@ -81,6 +82,13 @@ function RidingScreen() {
 
       <TopBar
         showBrand={!showTitle}
+        tag={
+          isSetup
+            ? undefined
+            : state.phase === 'done'
+              ? '완주'
+              : `CYCLE ${state.cycle + 1} / ${state.settings.cycles}`
+        }
         previewOn={panel === 'preview'}
         previewDisabled={running && !isSetup}
         historyOn={panel === 'history'}
@@ -95,6 +103,9 @@ function RidingScreen() {
       {showTitle && !uiHidden && (
         <TitleScreen onStart={() => setSetupOpen(true)} onPreview={() => togglePanel('preview')} />
       )}
+
+      {/* 경로 바: 첫 화면(출발 전)엔 풍경만 보이게 숨긴다 */}
+      {!isSetup && !uiHidden && <RouteBar cameraX={d.cameraX} toBanpo={d.toBanpo} />}
 
       {isSetup && setupOpen && !uiHidden && (
         <SetupCard onStart={startRide} onBack={() => setSetupOpen(false)} />

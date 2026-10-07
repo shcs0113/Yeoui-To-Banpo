@@ -7,6 +7,7 @@ const ICON = { size: 24, strokeWidth: 1.8 };
 
 interface Props {
   showBrand: boolean; // 첫 화면에선 가운데 큰 타이틀이 대신하니 숨긴다
+  tag?: string; // 브랜드 옆 작은 태그 (예: CYCLE 2 / 4)
   previewOn: boolean;
   previewDisabled: boolean; // 달리는 중엔 미리보기를 못 연다
   historyOn: boolean;
@@ -29,6 +30,11 @@ export function TopBar(props: Props) {
         )}
       >
         여의도에서 반포까지
+        {props.tag && (
+          <span className="ml-2 rounded-full bg-black/35 px-2.5 py-1 align-middle text-xs font-bold max-[420px]:hidden">
+            {props.tag}
+          </span>
+        )}
       </div>
 
       <nav className="pointer-events-auto flex gap-0.5">
