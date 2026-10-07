@@ -1,3 +1,4 @@
+import { drawBridges } from './layers/bridges';
 import { drawCity } from './layers/city';
 import { drawMountains } from './layers/mountains';
 import { drawRiver } from './layers/river';
@@ -13,5 +14,5 @@ export function drawScene(ctx: CanvasRenderingContext2D, view: View, skyT: numbe
   drawMountains(ctx, view, light);
   drawCity(ctx, view, light);
   drawRiver(ctx, view, light, time);
-  // 다음 커밋부터: 다리 -> 나무·길·자전거
+  drawBridges(ctx, view, light, time);
 }
