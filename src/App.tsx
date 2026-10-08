@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { FinishCard } from './components/FinishCard';
 import { FocusHud } from './components/FocusHud';
 import { HistoryModal } from './components/HistoryModal';
@@ -9,6 +9,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { SetupCard } from './components/SetupCard';
 import { TitleScreen } from './components/TitleScreen';
 import { TopBar } from './components/TopBar';
+import { useKeyboard } from './hooks/useKeyboard';
 import { useNow } from './hooks/useNow';
 import { usePreview } from './hooks/usePreview';
 import { SceneCanvas } from './scene/SceneCanvas';
@@ -47,6 +48,7 @@ function RidingScreen() {
   const pv = usePreview(state.settings);
   const { preview } = pv;
   const previewing = preview !== null;
+  const previewDisabled = running && state.phase !== 'setup'; // 달리는 중엔 미리보기를 못 연다
   // 미리보기는 지금 방향으로 출발선에서 시작 (출발 전이면 반포행)
   const togglePreview = () => (previewing ? pv.close() : pv.open(d.toBanpo));
 
@@ -68,6 +70,77 @@ function RidingScreen() {
         : isSetup
           ? 'route'
           : 'all';
+
+  // Space: 지금 화면의 주 동작 하나
+  const primaryAction = () => {
+    if (showTitle) setSetupOpen(true);
+    else if (isSetup || (state.phase === 'focus' && state.status === 'idle')) startRide();
+    else if (running && state.phase !== 'lapse') timer.pause();
+    else if (state.status === 'paused') timer.resume();
+  };
+
+  // 키보드 단축키
+  const held = useRef({ left: false, right: false, shift: false }); // 지금 누르고 있는 키
+  const updateScrub = () => {
+    const h = held.current;
+    pv.scrub(h.left === h.right ? 0 : h.right ? 1 : -1, h.shift);
+  };
+  useKeyboard({
+    down: (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return; // Cmd+H 같은 OS, 브라우저 단축키는 그대로 둔다
+      if (panel !== null) return; // 팝업 창이 열려 있으면 Esc만 (Modal이 직접 닫는다)
+      // e.code는 자판 위치: 한글 입력 상태에서도 M 자리는 'KeyM' (e.key는 'ㅡ'가 된다)
+      const { code } = e;
+
+      if (code === 'Escape') {
+        if (previewing) pv.close();
+        else if (setupOpen) setSetupOpen(false);
+        return;
+      }
+      if (code === 'KeyU') return setUiHidden((v) => !v);
+      if (code === 'KeyH') return setPanel('history');
+      if (code === 'KeyM') {
+        if (!previewDisabled) togglePreview();
+        return;
+      }
+
+      if (code === 'Space') {
+        e.preventDefault(); // 페이지 스크롤 막기
+        // 포커스된 버튼이 있으면 Space를 뗄 때 그 버튼도 눌린다 -> 포커스를 먼저 뺀다
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+        if (previewing) pv.toggleAuto();
+        else primaryAction();
+        return;
+      }
+
+      if (!previewing) return;
+      // 여기부터 미리보기 전용
+      const digit = /^Digit([1-9])$/.exec(code);
+      if (digit) return pv.jump(Number(digit[1]) - 1);
+      if (code === 'ArrowLeft' || code === 'ArrowRight') {
+        e.preventDefault(); // 포커스된 슬라이더가 같이 움직이지 않게
+        if (e.repeat) return; // 꾹 누르면 keydown이 반복해서 오지만 처음 한 번만
+        held.current[code === 'ArrowLeft' ? 'left' : 'right'] = true;
+        updateScrub();
+      }
+      if (code === 'ShiftLeft' || code === 'ShiftRight') {
+        held.current.shift = true;
+        updateScrub();
+      }
+    },
+    up: (e) => {
+      const h = held.current;
+      if (e.code === 'ArrowLeft') h.left = false;
+      else if (e.code === 'ArrowRight') h.right = false;
+      else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') h.shift = false;
+      else return;
+      if (previewing) updateScrub();
+    },
+    blur: () => {
+      held.current = { left: false, right: false, shift: false };
+      pv.scrub(0, false);
+    },
+  });
 
   // 화면이 보여줄 위치, 방향: 미리보기 중이면 미리보기 값, 아니면 타이머 값
   const view = preview
@@ -99,7 +172,7 @@ function RidingScreen() {
                 : `CYCLE ${state.cycle + 1} / ${state.settings.cycles}`
         }
         previewOn={previewing}
-        previewDisabled={running && !isSetup}
+        previewDisabled={previewDisabled}
         historyOn={panel === 'history'}
         settingsOn={panel === 'settings'}
         uiHidden={uiHidden}

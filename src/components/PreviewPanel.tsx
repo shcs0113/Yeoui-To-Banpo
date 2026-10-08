@@ -13,6 +13,7 @@ import {
 } from '../lib/preview';
 import { useTimer } from '../state/TimerContext';
 import { GlassPanel } from './ui/GlassPanel';
+import { Kbd } from './ui/Kbd';
 import { PillButton } from './ui/PillButton';
 import { SimTimeline } from './SimTimeline';
 
@@ -108,6 +109,11 @@ export function PreviewPanel({ preview, auto, onChange, onToggleAuto, onClose }:
           {toBanpo ? '→ 반포 방향' : '← 여의나루 방향'}
         </PillButton>
       </div>
+      {/* 단축키 안내: 키보드가 없는 좁은 화면(폰)에선 숨긴다 */}
+      <p className="mt-2.5 text-[11.5px] leading-[1.9] text-white/60 max-[560px]:hidden">
+        <Kbd>←</Kbd> <Kbd>→</Kbd> 타임라인 이동 · <Kbd>Shift</Kbd> 빠르게 · <Kbd>1</Kbd>~
+        <Kbd>{ROUTE.length}</Kbd> 지점 이동 · <Kbd>Space</Kbd> 자동 주행 · <Kbd>Esc</Kbd> 닫기
+      </p>
     </GlassPanel>
   );
 }
