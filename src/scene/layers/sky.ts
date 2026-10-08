@@ -41,11 +41,14 @@ function drawStars(ctx: CanvasRenderingContext2D, view: View, light: Light, time
   }
 }
 
+// 달은 상단 경로 바(지점 이름까지 약 118px) 아래에 둔다. 좁은 화면에선 바가 화면 끝까지 차서 겹치니까
+const MOON_MIN_Y = 150;
+
 // 초승달: 밝은 원 위에 하늘색 원을 살짝 비켜 겹쳐서 깎는다
 function drawMoon(ctx: CanvasRenderingContext2D, view: View, light: Light) {
   if (light.night <= 0.2) return;
   const x = view.width * 0.83;
-  const y = view.height * 0.13;
+  const y = Math.min(Math.max(view.height * 0.13, MOON_MIN_Y), view.horizon - 40); // 수평선 아래로는 안 내려가게
   ctx.fillStyle = `rgba(245,240,220,${light.night * 0.9})`;
   ctx.beginPath();
   ctx.arc(x, y, 11, 0, Math.PI * 2);

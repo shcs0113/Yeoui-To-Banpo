@@ -5,6 +5,7 @@ import { HistoryModal } from './components/HistoryModal';
 import { PreviewPanel } from './components/PreviewPanel';
 import { RestHud } from './components/RestHud';
 import { RouteBar } from './components/RouteBar';
+import { RouteInfo } from './components/RouteInfo';
 import { SettingsModal } from './components/SettingsModal';
 import { SetupCard } from './components/SetupCard';
 import { TitleScreen } from './components/TitleScreen';
@@ -146,6 +147,8 @@ function RidingScreen() {
   const view = preview
     ? { cameraX: preview.x, toBanpo: preview.toBanpo }
     : { cameraX: d.cameraX, toBanpo: d.toBanpo };
+  // 경로 바와 거리 정보: 첫 화면(출발 전)엔 풍경만 보이게 숨긴다
+  const showRoute = (previewing || !isSetup) && !uiHidden;
 
   return (
     <div className="relative h-dvh w-full overflow-hidden bg-slate-900">
@@ -162,6 +165,7 @@ function RidingScreen() {
 
       <TopBar
         showBrand={!showTitle}
+        info={showRoute ? <RouteInfo cameraX={view.cameraX} toBanpo={view.toBanpo} /> : undefined}
         tag={
           previewing
             ? '미리보기'
@@ -186,10 +190,7 @@ function RidingScreen() {
         <TitleScreen onStart={() => setSetupOpen(true)} onPreview={togglePreview} />
       )}
 
-      {/* 경로 바: 첫 화면(출발 전)엔 풍경만 보이게 숨긴다 */}
-      {(previewing || !isSetup) && !uiHidden && (
-        <RouteBar cameraX={view.cameraX} toBanpo={view.toBanpo} />
-      )}
+      {showRoute && <RouteBar cameraX={view.cameraX} toBanpo={view.toBanpo} />}
 
       {/* 미리보기 중엔 타이머 화면(설정 카드, 시계, 독, 완주 카드)을 모두 내린다 */}
       {previewing ? (

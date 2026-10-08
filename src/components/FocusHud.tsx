@@ -108,6 +108,6 @@ function Controls({ onStart }: { onStart: () => void }) {
       </>
     );
   }
-  
+
   return null; // 5초 타임랩스 동안엔 버튼 없음
 }

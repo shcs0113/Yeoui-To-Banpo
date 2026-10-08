@@ -10,7 +10,7 @@ interface Props {
   routeBarVisible: boolean; // 경로 바가 보이면 그 아래로 피한다
 }
 
-const ROUTE_BAR_BOTTOM = 142; // 경로 바 아래 끝 (top 68px + 높이 약 74px)
+const ROUTE_BAR_BOTTOM = 118; // 경로 바 아래 끝 (top 68px + 지점 이름까지 약 48px)
 const SCREEN_TOP = 56; // 경로 바가 없을 때: 상단 아이콘 줄 아래
 
 // 휴식, 타임랩스: 시계를 하늘 한가운데(수평선 바로 위)에 크게. '쉬는 시간'임을 분명하게

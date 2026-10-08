@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { ClipboardList, EyeIcon, EyeOff, MapIcon, SlidersHorizontal } from 'lucide-react';
 import { cx } from '../lib/cx';
 import { IconButton } from './ui/IconButton';
@@ -8,6 +9,7 @@ const ICON = { size: 24, strokeWidth: 1.8 };
 interface Props {
   showBrand: boolean; // 첫 화면에선 가운데 큰 타이틀이 대신하니 숨긴다
   tag?: string; // 브랜드 옆 작은 태그 (예: CYCLE 2 / 4)
+  info?: ReactNode; // 거리 정보 (RouteInfo). 넓은 화면은 가운데, 좁은 화면은 브랜드 대신 왼쪽
   previewOn: boolean;
   previewDisabled: boolean; // 달리는 중엔 미리보기를 못 연다
   historyOn: boolean;
@@ -27,6 +29,7 @@ export function TopBar(props: Props) {
         className={cx(
           'text-[17px] font-extrabold whitespace-nowrap transition-opacity duration-300 [text-shadow:0_2px_12px_rgba(0,0,0,.45)] max-[420px]:text-sm',
           (!props.showBrand || props.uiHidden) && 'invisible opacity-0',
+          props.info != null && 'max-[900px]:hidden', // 좁은 화면에선 거리 정보에 자리를 내준다
         )}
       >
         여의도에서 반포까지
@@ -36,6 +39,12 @@ export function TopBar(props: Props) {
           </span>
         )}
       </div>
+
+      {props.info != null && (
+        <div className="absolute bottom-0 left-1/2 flex h-[42px] -translate-x-1/2 items-center max-[900px]:static max-[900px]:translate-x-0">
+          {props.info}
+        </div>
+      )}
 
       <nav className="pointer-events-auto flex gap-0.5">
         <IconButton

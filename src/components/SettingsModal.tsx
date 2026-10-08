@@ -28,11 +28,7 @@ export function SettingsModal({ onClose }: Props) {
   const running = state.status === 'running'; // 달리는 중엔 배속을 못 바꾼다
 
   return (
-    <Modal
-      title="설정"
-      icon={<SlidersHorizontal size={20} strokeWidth={1.8} />}
-      onClose={onClose}
-    >
+    <Modal title="설정" icon={<SlidersHorizontal size={20} strokeWidth={1.8} />} onClose={onClose}>
       <div className="border-t border-white/14 py-3">
         <Toggle
           label="휴식 끝나면 다음 사이클 자동 출발"
