@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { cx } from '../../lib/cx';
 
-export type Tone = 'focus' | 'rest' | 'lapse';
+export type Tone = 'focus' | 'rest';
 
 interface Props {
   tone: Tone;
@@ -9,11 +9,10 @@ interface Props {
   children: ReactNode;
 }
 
-// 단계별 점 색: 집중 파랑, 휴식 초록, 타임랩스 금색 (빛나는 그림자 포함)
+// 단계별 점 색: 집중 파랑, 휴식 초록 (빛나는 그림자 포함)
 const DOT: Record<Tone, string> = {
   focus: 'bg-accent shadow-[0_0_10px_var(--color-accent)]',
   rest: 'bg-rest shadow-[0_0_10px_var(--color-rest)]',
-  lapse: 'bg-gold shadow-[0_0_10px_var(--color-gold)]',
 };
 
 // 빛나는 점 + 글자 배지 (배경 없이 글자만, 풍경 위에서 읽히게 그림자)

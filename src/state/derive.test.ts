@@ -75,6 +75,12 @@ describe('lapse / done', () => {
     expect(derive(skipped, 31 * MIN + SKIP_LAPSE_MS).skyT).toBeCloseTo(1);
   });
 
+  it('건너뛰기: 남은 휴식 4분을 5초 동안 0까지 빨리 감는다', () => {
+    expect(derive(skipped, 31 * MIN).remainingMs).toBe(4 * MIN);
+    expect(derive(skipped, 31 * MIN + SKIP_LAPSE_MS / 2).remainingMs).toBeCloseTo(2 * MIN);
+    expect(derive(skipped, 31 * MIN + SKIP_LAPSE_MS).remainingMs).toBe(0);
+  });
+
   it('완주하면 도착지, 밤', () => {
     const one = { ...initState(), settings: { focusMin: 30, breakMin: 5, cycles: 1 } };
     const done = run(one, { type: 'START', now: 0 }, tick(30 * MIN));

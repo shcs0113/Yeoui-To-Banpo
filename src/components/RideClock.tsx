@@ -20,9 +20,8 @@ function badgeFor(state: TimerState, toBanpo: boolean): { tone: Tone; text: stri
     case 'focus':
       return { tone: 'focus', text: `집중 · ${toBanpo ? '→' : '←'} ${dest(toBanpo)}` };
     case 'break':
+    case 'lapse': // 건너뛰기 타임랩스도 휴식의 끝부분이라 같은 문구
       return { tone: 'rest', text: `휴식 · ${dest(toBanpo)}` };
-    case 'lapse':
-      return { tone: 'lapse', text: '타임랩스' };
     default:
       return null;
   }

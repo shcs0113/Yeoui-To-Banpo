@@ -20,7 +20,7 @@ const smoothstep = (k: number) => k * k * (3 - 2 * k);
 
 export function derive(state: TimerState, now: number): Derived {
   const toBanpo = state.cycle % 2 === 0;
-  const remainingMs = remainingAt(state, now);
+  let remainingMs = remainingAt(state, now);
   let progress = 0;
   let skyT = 0;
 
@@ -43,11 +43,12 @@ export function derive(state: TimerState, now: number): Derived {
     }
 
     case 'lapse': {
-      // 건너뛴 순간의 하늘에서 아침까지 5초 동안
+      // 건너뛴 순간의 하늘에서 아침까지 5초 동안. 남은 휴식 시간도 같은 곡선으로 0까지 빨리 감는다
       progress = 1;
       const from = state.lapse?.fromT ?? 0.5;
       const k = state.lapse ? clamp01((now - state.lapse.startAt) / SKIP_LAPSE_MS) : 1;
       skyT = from + (1 - from) * smoothstep(k);
+      remainingMs = state.remainingMs * (1 - smoothstep(k));
       break;
     }
 
