@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { FinishCard } from './components/FinishCard';
 import { FocusHud } from './components/FocusHud';
+import { HistoryModal } from './components/HistoryModal';
 import { RestHud } from './components/RestHud';
 import { RouteBar } from './components/RouteBar';
 import { SetupCard } from './components/SetupCard';
@@ -44,6 +45,7 @@ function RidingScreen() {
   const [panel, setPanel] = useState<Panel>(null); // 열린 창 (모달은 5단계에서)
   const [uiHidden, setUiHidden] = useState(false);
   const togglePanel = (p: Exclude<Panel, null>) => setPanel((cur) => (cur === p ? null : p));
+  const closePanel = useCallback(() => setPanel(null), []);
 
   const isSetup = state.phase === 'setup';
   const done = state.phase === 'done';
@@ -100,6 +102,9 @@ function RidingScreen() {
 
       {/* 완주: 하단 독 자리에 결과 카드 */}
       {done && <FinishCard onHistory={() => setPanel('history')} />}
+
+      {/* 팝업 창 */}
+      {panel === 'history' && <HistoryModal onClose={closePanel} />}
 
       {/* 임시 개발 도구: 설정 모달(5단계)로 옮길 때까지 */}
       {!isSetup && !uiHidden && (
