@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes } from 'react';
 import { cx } from '../../lib/cx';
 
 type Variant = 'clear' | 'primary' | 'danger';
-type Size = 'md' | 'lg';
+type Size = 'sm' | 'md' | 'lg';
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
@@ -17,6 +17,7 @@ const VARIANTS: Record<Variant, string> = {
 };
 
 const SIZES: Record<Size, string> = {
+  sm: 'px-3 py-1.5 text-[12.5px]',
   md: 'px-[22px] py-2.5 text-sm',
   lg: 'px-7 py-[13px] text-base',
 };

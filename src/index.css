@@ -54,6 +54,13 @@ body {
     background: #fff;
     box-shadow: 0 0 0 4px rgb(79 140 255 / 0.45);
   }
+  /* 트랙 없이 손잡이만 (타임라인처럼 아래에 직접 그린 띠가 있을 때) */
+  .range-bare::-webkit-slider-runnable-track {
+    background: transparent;
+  }
+  .range-bare::-moz-range-track {
+    background: transparent;
+  }
   .range:focus-visible {
     outline: none;
   }

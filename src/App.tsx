@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { FinishCard } from './components/FinishCard';
 import { FocusHud } from './components/FocusHud';
 import { HistoryModal } from './components/HistoryModal';
+import { PreviewPanel } from './components/PreviewPanel';
 import { RestHud } from './components/RestHud';
 import { RouteBar } from './components/RouteBar';
 import { SettingsModal } from './components/SettingsModal';
@@ -9,12 +10,13 @@ import { SetupCard } from './components/SetupCard';
 import { TitleScreen } from './components/TitleScreen';
 import { TopBar } from './components/TopBar';
 import { useNow } from './hooks/useNow';
+import { simAt, type PreviewState } from './lib/preview';
 import { SceneCanvas } from './scene/SceneCanvas';
 import { derive } from './state/derive';
 import { useTimer } from './state/TimerContext';
 import { TimerProvider } from './state/TimerProvider';
 
-type Panel = 'preview' | 'history' | 'settings' | null;
+type Panel = 'history' | 'settings' | null;
 
 export default function App() {
   return (
@@ -36,68 +38,106 @@ function RidingScreen() {
 
   // 화면 상태 (타이머와 상관없는 UI 상태라 여기에 둔다)
   const [setupOpen, setSetupOpen] = useState(false); // 출발 전: 타이틀 <-> 설정 카드
-  const [panel, setPanel] = useState<Panel>(null); // 열린 창
+  const [panel, setPanel] = useState<Panel>(null); // 열린 팝업 창
+  const [preview, setPreview] = useState<PreviewState | null>(null); // null = 미리보기 아님
   const [uiHidden, setUiHidden] = useState(false);
   const togglePanel = (p: Exclude<Panel, null>) => setPanel((cur) => (cur === p ? null : p));
   const closePanel = useCallback(() => setPanel(null), []);
 
+  const previewing = preview !== null;
+  // 미리보기는 지금 방향으로 출발선에서 시작 (출발 전이면 반포행)
+  const togglePreview = () =>
+    setPreview((cur) => (cur ? null : simAt(0, d.toBanpo, state.settings)));
+
   const isSetup = state.phase === 'setup';
   const done = state.phase === 'done';
-  const showTitle = isSetup && !setupOpen;
+  const showTitle = isSetup && !setupOpen && !previewing;
   const startRide = () => {
     setSetupOpen(false); // 다음에 '처음으로' 오면 타이틀부터
     timer.start();
   };
   const resting = state.phase === 'break' || state.phase === 'lapse';
   // 다리 이름표: 첫 화면엔 장식용 마포대교 숨김, UI 숨김, 휴식 중엔 전부 숨김 (휴식 시계와 겹치지 않게)
-  const labels = uiHidden || resting ? 'none' : isSetup ? 'route' : 'all';
+  const labels = uiHidden
+    ? 'none'
+    : previewing
+      ? 'all'
+      : resting
+        ? 'none'
+        : isSetup
+          ? 'route'
+          : 'all';
+
+  // 화면이 보여줄 위치, 방향: 미리보기 중이면 미리보기 값, 아니면 타이머 값
+  const view = preview
+    ? { cameraX: preview.x, toBanpo: preview.toBanpo }
+    : { cameraX: d.cameraX, toBanpo: d.toBanpo };
 
   return (
     <div className="relative h-dvh w-full overflow-hidden bg-slate-900">
       {/* 캔버스는 매 프레임 이 함수를 불러 지금 위치, 하늘을 받아 간다 */}
-      <SceneCanvas getScene={(t) => ({ ...derive(state, t), labels })} />
+      <SceneCanvas
+        getScene={(t) =>
+          preview ? { ...view, skyT: preview.skyT, labels } : { ...derive(state, t), labels }
+        }
+      />
 
       <TopBar
         showBrand={!showTitle}
         tag={
-          isSetup
-            ? undefined
-            : done
-              ? '완주'
-              : `CYCLE ${state.cycle + 1} / ${state.settings.cycles}`
+          previewing
+            ? '미리보기'
+            : isSetup
+              ? undefined
+              : done
+                ? '완주'
+                : `CYCLE ${state.cycle + 1} / ${state.settings.cycles}`
         }
-        previewOn={panel === 'preview'}
+        previewOn={previewing}
         previewDisabled={running && !isSetup}
         historyOn={panel === 'history'}
         settingsOn={panel === 'settings'}
         uiHidden={uiHidden}
-        onPreview={() => togglePanel('preview')}
+        onPreview={togglePreview}
         onHistory={() => togglePanel('history')}
         onToggleUi={() => setUiHidden((v) => !v)}
         onSettings={() => togglePanel('settings')}
       />
 
       {showTitle && !uiHidden && (
-        <TitleScreen onStart={() => setSetupOpen(true)} onPreview={() => togglePanel('preview')} />
+        <TitleScreen onStart={() => setSetupOpen(true)} onPreview={togglePreview} />
       )}
 
       {/* 경로 바: 첫 화면(출발 전)엔 풍경만 보이게 숨긴다 */}
-      {!isSetup && !uiHidden && <RouteBar cameraX={d.cameraX} toBanpo={d.toBanpo} />}
-
-      {isSetup && setupOpen && !uiHidden && (
-        <SetupCard onStart={startRide} onBack={() => setSetupOpen(false)} />
+      {(previewing || !isSetup) && !uiHidden && (
+        <RouteBar cameraX={view.cameraX} toBanpo={view.toBanpo} />
       )}
 
-      {/* 휴식 시계: 하늘 가운데. 시계는 UI를 숨겨도 남긴다 */}
-      {resting && <RestHud toBanpo={d.toBanpo} remainingMs={shownMs} routeBarVisible={!uiHidden} />}
+      {/* 미리보기 중엔 타이머 화면(설정 카드, 시계, 독, 완주 카드)을 모두 내린다 */}
+      {previewing ? (
+        !uiHidden && (
+          <PreviewPanel preview={preview} onChange={setPreview} onClose={() => setPreview(null)} />
+        )
+      ) : (
+        <>
+          {isSetup && setupOpen && !uiHidden && (
+            <SetupCard onStart={startRide} onBack={() => setSetupOpen(false)} />
+          )}
 
-      {/* 하단 독은 UI를 숨겨도 남긴다 (시간은 늘 보여야 하니까) */}
-      {!isSetup && !done && (
-        <FocusHud toBanpo={d.toBanpo} remainingMs={shownMs} onStart={startRide} />
+          {/* 휴식 시계: 하늘 가운데. 시계는 UI를 숨겨도 남긴다 */}
+          {resting && (
+            <RestHud toBanpo={d.toBanpo} remainingMs={shownMs} routeBarVisible={!uiHidden} />
+          )}
+
+          {/* 하단 독은 UI를 숨겨도 남긴다 (시간은 늘 보여야 하니까) */}
+          {!isSetup && !done && (
+            <FocusHud toBanpo={d.toBanpo} remainingMs={shownMs} onStart={startRide} />
+          )}
+
+          {/* 완주: 하단 독 자리에 결과 카드 */}
+          {done && <FinishCard onHistory={() => setPanel('history')} />}
+        </>
       )}
-
-      {/* 완주: 하단 독 자리에 결과 카드 */}
-      {done && <FinishCard onHistory={() => setPanel('history')} />}
 
       {/* 팝업 창 */}
       {panel === 'history' && <HistoryModal onClose={closePanel} />}
