@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { X } from 'lucide-react';
+import { Pause, Play, X } from 'lucide-react';
 import { ROUTE, ROUTE_END_X } from '../constants/course';
 import { formatClock } from '../lib/format';
 import {
@@ -16,14 +16,18 @@ import { GlassPanel } from './ui/GlassPanel';
 import { PillButton } from './ui/PillButton';
 import { SimTimeline } from './SimTimeline';
 
+const ICON = { size: 16, strokeWidth: 2.2 };
+
 interface Props {
   preview: PreviewState;
+  auto: boolean; // 자동 주행 중
   onChange: (next: PreviewState) => void;
+  onToggleAuto: () => void;
   onClose: () => void;
 }
 
 // 코스 미리보기: 하단에서 타임라인, 위치, 시간대를 직접 움직여 본다
-export function PreviewPanel({ preview, onChange, onClose }: Props) {
+export function PreviewPanel({ preview, auto, onChange, onToggleAuto, onClose }: Props) {
   const { settings } = useTimer().state;
   const { focusMs, totalMs } = simSpan(settings);
   const sim = simOf(preview, settings);
@@ -96,6 +100,10 @@ export function PreviewPanel({ preview, onChange, onClose }: Props) {
       </div>
 
       <div className="mt-2.5 flex gap-2">
+        <PillButton onClick={onToggleAuto}>
+          {auto ? <Pause {...ICON} /> : <Play {...ICON} />}
+          {auto ? '멈춤' : '자동 주행'}
+        </PillButton>
         <PillButton onClick={() => onChange(simAt(0, !toBanpo, settings))}>
           {toBanpo ? '→ 반포 방향' : '← 여의나루 방향'}
         </PillButton>

@@ -1,6 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import type { Settings } from '../state/types';
-import { jumpTo, previewKm, simAt, simOf, simSpan, skyWord } from './preview';
+import {
+  AUTO_TOTAL_MS,
+  autoSim,
+  jumpTo,
+  previewKm,
+  simAt,
+  simOf,
+  simSpan,
+  skyWord,
+} from './preview';
 
 // 집중 30분 + 휴식 5분 = 35분
 const S: Settings = { focusMin: 30, breakMin: 5, cycles: 2 };
@@ -77,5 +86,26 @@ describe('skyWord', () => {
     expect(skyWord(0.35)).toBe('노을');
     expect(skyWord(0.5)).toBe('밤');
     expect(skyWord(0.9)).toBe('일출');
+  });
+});
+
+describe('autoSim', () => {
+  const { focusShare, lapseShare } = simSpan(S);
+
+  it('34초 동안 한 사이클', () => {
+    expect(AUTO_TOTAL_MS).toBe(34_000);
+    expect(autoSim(0, S)).toBe(0);
+    expect(autoSim(AUTO_TOTAL_MS, S)).toBe(1);
+    expect(autoSim(AUTO_TOTAL_MS + 5000, S)).toBe(1); // 넘어가도 끝에서 멈춤
+  });
+
+  it('24초에 도착, 29초에 타임랩스 시작', () => {
+    expect(autoSim(12_000, S)).toBeCloseTo(focusShare / 2);
+    expect(autoSim(24_000, S)).toBeCloseTo(focusShare);
+    expect(autoSim(29_000, S)).toBeCloseTo(1 - lapseShare);
+  });
+
+  it('시작 전(음수)이면 0', () => {
+    expect(autoSim(-100, S)).toBe(0);
   });
 });

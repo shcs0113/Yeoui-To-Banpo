@@ -84,3 +84,23 @@ export function skyWord(t: number): string {
   if (t < 0.94) return '일출';
   return '낮';
 }
+
+// 자동 주행: 실제 한 사이클을 34초로 줄여 보여준다 (주행 24초 -> 휴식 5초 -> 타임랩스 5초)
+const AUTO_RIDE_S = 24;
+const AUTO_REST_S = 5;
+const AUTO_LAPSE_S = 5;
+export const AUTO_TOTAL_MS = (AUTO_RIDE_S + AUTO_REST_S + AUTO_LAPSE_S) * 1000;
+
+// 자동 주행 시작 후 지난 시간 -> 타임라인 위치
+export function autoSim(elapsedMs: number, settings: Settings): number {
+  const { focusShare, lapseShare } = simSpan(settings);
+  const lapseStart = 1 - lapseShare;
+  const s = Math.max(0, elapsedMs / 1000);
+
+  if (s < AUTO_RIDE_S) return (s / AUTO_RIDE_S) * focusShare;
+  if (s < AUTO_RIDE_S + AUTO_REST_S) {
+    return focusShare + ((s - AUTO_RIDE_S) / AUTO_REST_S) * (lapseStart - focusShare);
+  }
+  const k = (s - AUTO_RIDE_S - AUTO_REST_S) / AUTO_LAPSE_S;
+  return Math.min(1, lapseStart + k * lapseShare);
+}

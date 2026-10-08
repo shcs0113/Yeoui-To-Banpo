@@ -10,7 +10,7 @@ import { SetupCard } from './components/SetupCard';
 import { TitleScreen } from './components/TitleScreen';
 import { TopBar } from './components/TopBar';
 import { useNow } from './hooks/useNow';
-import { simAt, type PreviewState } from './lib/preview';
+import { usePreview } from './hooks/usePreview';
 import { SceneCanvas } from './scene/SceneCanvas';
 import { derive } from './state/derive';
 import { useTimer } from './state/TimerContext';
@@ -39,15 +39,16 @@ function RidingScreen() {
   // 화면 상태 (타이머와 상관없는 UI 상태라 여기에 둔다)
   const [setupOpen, setSetupOpen] = useState(false); // 출발 전: 타이틀 <-> 설정 카드
   const [panel, setPanel] = useState<Panel>(null); // 열린 팝업 창
-  const [preview, setPreview] = useState<PreviewState | null>(null); // null = 미리보기 아님
   const [uiHidden, setUiHidden] = useState(false);
   const togglePanel = (p: Exclude<Panel, null>) => setPanel((cur) => (cur === p ? null : p));
   const closePanel = useCallback(() => setPanel(null), []);
 
+  // 코스 미리보기 (자동 주행 포함)
+  const pv = usePreview(state.settings);
+  const { preview } = pv;
   const previewing = preview !== null;
   // 미리보기는 지금 방향으로 출발선에서 시작 (출발 전이면 반포행)
-  const togglePreview = () =>
-    setPreview((cur) => (cur ? null : simAt(0, d.toBanpo, state.settings)));
+  const togglePreview = () => (previewing ? pv.close() : pv.open(d.toBanpo));
 
   const isSetup = state.phase === 'setup';
   const done = state.phase === 'done';
@@ -77,9 +78,13 @@ function RidingScreen() {
     <div className="relative h-dvh w-full overflow-hidden bg-slate-900">
       {/* 캔버스는 매 프레임 이 함수를 불러 지금 위치, 하늘을 받아 간다 */}
       <SceneCanvas
-        getScene={(t) =>
-          preview ? { ...view, skyT: preview.skyT, labels } : { ...derive(state, t), labels }
-        }
+        getScene={(t) => {
+          // 미리보기는 매 프레임 그 시각의 화면으로 (자동 주행이 부드럽게 움직이도록)
+          const p = pv.at(t);
+          return p
+            ? { cameraX: p.x, toBanpo: p.toBanpo, skyT: p.skyT, labels }
+            : { ...derive(state, t), labels };
+        }}
       />
 
       <TopBar
@@ -116,7 +121,13 @@ function RidingScreen() {
       {/* 미리보기 중엔 타이머 화면(설정 카드, 시계, 독, 완주 카드)을 모두 내린다 */}
       {previewing ? (
         !uiHidden && (
-          <PreviewPanel preview={preview} onChange={setPreview} onClose={() => setPreview(null)} />
+          <PreviewPanel
+            preview={preview}
+            auto={pv.auto}
+            onChange={pv.change}
+            onToggleAuto={pv.toggleAuto}
+            onClose={pv.close}
+          />
         )
       ) : (
         <>
