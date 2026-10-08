@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FocusHud } from './components/FocusHud';
+import { RestHud } from './components/RestHud';
 import { RouteBar } from './components/RouteBar';
 import { SetupCard } from './components/SetupCard';
 import { TitleScreen } from './components/TitleScreen';
@@ -88,6 +89,9 @@ function RidingScreen() {
       {isSetup && setupOpen && !uiHidden && (
         <SetupCard onStart={startRide} onBack={() => setSetupOpen(false)} />
       )}
+
+      {/* 휴식 시계: 하늘 가운데. 시계는 UI를 숨겨도 남긴다 */}
+      {resting && <RestHud toBanpo={d.toBanpo} remainingMs={shownMs} routeBarVisible={!uiHidden} />}
 
       {/* 하단 독은 UI를 숨겨도 남긴다 (시간은 늘 보여야 하니까) */}
       {!isSetup && <FocusHud toBanpo={d.toBanpo} remainingMs={shownMs} onStart={startRide} />}
