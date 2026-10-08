@@ -1,4 +1,5 @@
 import { routeProgress } from '../lib/route';
+import { Digits } from './ui/Digits';
 
 interface Props {
   cameraX: number;
@@ -13,7 +14,10 @@ export function RouteInfo({ cameraX, toBanpo }: Props) {
   return (
     <div className="flex items-center gap-2 text-[13px] whitespace-nowrap text-white/85 tabular-nums [text-shadow:0_1px_6px_rgba(0,0,0,.6),0_0_2px_rgba(0,0,0,.35)] max-[900px]:flex-col max-[900px]:items-start max-[900px]:gap-0 max-[900px]:text-[11.5px] max-[900px]:leading-[1.35] [&_b]:text-white">
       <span>
-        <b className="max-[900px]:text-sm">{legKm.toFixed(2)}</b> / 6.80km
+        <b className="max-[900px]:text-sm">
+          <Digits value={legKm.toFixed(2)} />
+        </b>{' '}
+        / 6.80km
       </span>
       <span aria-hidden className="opacity-50 max-[900px]:hidden">
         ·
@@ -21,7 +25,8 @@ export function RouteInfo({ cameraX, toBanpo }: Props) {
       <span>
         {next ? (
           <>
-            다음 <b>{next.name}</b> {next.km.toFixed(2)}km
+            다음 <b>{next.name}</b> <Digits value={next.km.toFixed(2)} />
+            km
           </>
         ) : (
           <>

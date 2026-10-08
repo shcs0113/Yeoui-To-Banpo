@@ -3,6 +3,7 @@ import { formatClock } from '../lib/format';
 import type { TimerState } from '../state/types';
 import { Badge, type Tone } from './ui/Badge';
 import { CycleDots } from './ui/CycleDots';
+import { Digits } from './ui/Digits';
 
 interface Props {
   state: TimerState;
@@ -57,7 +58,7 @@ export function RideClock({ state, toBanpo, remainingMs, big = false }: Props) {
             : 'mt-1.5 mb-1 text-7xl max-[560px]:text-6xl',
         )}
       >
-        {formatClock(remainingMs)}
+        <Digits value={formatClock(remainingMs)} />
       </div>
       <div
         className={cx(

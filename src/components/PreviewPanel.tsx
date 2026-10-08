@@ -12,6 +12,7 @@ import {
   type PreviewState,
 } from '../lib/preview';
 import { useTimer } from '../state/TimerContext';
+import { Digits } from './ui/Digits';
 import { GlassPanel } from './ui/GlassPanel';
 import { Kbd } from './ui/Kbd';
 import { PillButton } from './ui/PillButton';
@@ -50,12 +51,17 @@ export function PreviewPanel({ preview, auto, onChange, onToggleAuto, onClose }:
       <div className="mb-1.5 border-b border-white/15 pb-2.5">
         <div className="flex items-baseline justify-between gap-2.5 pr-10 text-[13px]">
           <b className="text-lg tabular-nums">
-            {ms <= focusMs
-              ? `${formatClock(ms)} / ${formatClock(focusMs)}`
-              : `휴식 ${formatClock(totalMs - ms)} 남음`}
+            <Digits
+              value={
+                ms <= focusMs
+                  ? `${formatClock(ms)} / ${formatClock(focusMs)}`
+                  : `휴식 ${formatClock(totalMs - ms)} 남음`
+              }
+            />
           </b>
           <span className="text-white/65">
-            {previewKm(preview).toFixed(2)}km · {skyWord(preview.skyT)}
+            <Digits value={previewKm(preview).toFixed(2)} />
+            km · {skyWord(preview.skyT)}
             {preview.sim === null && ' (자유 조작)'}
           </span>
         </div>
