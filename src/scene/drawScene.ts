@@ -1,4 +1,5 @@
 import { drawBike } from './layers/bike';
+import { boatLayers } from './layers/boats';
 import { type LabelMode, drawBridges } from './layers/bridges';
 import { drawCity } from './layers/city';
 import { drawMountains } from './layers/mountains';
@@ -16,6 +17,7 @@ import type { View } from './projection';
 export interface Frame {
   skyT: number; // 하늘 0 낮 → 0.5 밤 → 1 아침
   time: number; // 경과 초 (반짝임·흔들림·지하철용)
+  clock: number; // 실제 시각 (초). 새로고침해도 이어져야 하는 것용 (한강버스)
   bikeZ: number; // 자전거가 달리는 차선 깊이
   toBanpo: boolean; // 자전거 방향
   labels: LabelMode; // 다리 이름표를 어디까지 보여줄지
@@ -37,7 +39,8 @@ export function drawScene(ctx: CanvasRenderingContext2D, view: View, frame: Fram
   if (show > 0 && nearYeoui > 0) drawFireworks(ctx, view, time, show * nearYeoui); // 강 건너 하늘
 
   drawRiver(ctx, view, light, time);
-  drawBridges(ctx, view, light, time, frame.labels);
+  // 한강버스는 다리 교각 사이에 끼워 그린다 (다리 밑을 지날 때 앞뒤 교각 순서가 맞게)
+  drawBridges(ctx, view, light, time, frame.labels, boatLayers(ctx, view, light, frame.clock));
   if (show > 0 && nearBanpo > 0) drawFountain(ctx, view, time, show * nearBanpo); // 다리 앞 강물
   drawTrees(ctx, view, light);
   drawPath(ctx, view, light);

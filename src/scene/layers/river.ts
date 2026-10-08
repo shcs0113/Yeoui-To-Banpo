@@ -4,6 +4,7 @@ import { type Light, shade } from '../lighting';
 import { NEAR, type View, project } from '../projection';
 import { RIPPLE_ROWS, rippleXs, rippleZ } from '../ripples';
 
+export const WATER_Y = -1; // 강물 높이 (둔치보다 1m 낮다)
 export const RIVER_Z0 = 19; // 강이 시작하는 깊이 (자전거길 바로 뒤)
 export const RIVER_Z1 = 1000; // 강 건너편 둔치
 const FAR_BANK_Z = 1100; // 건너편 도시가 시작하는 깊이

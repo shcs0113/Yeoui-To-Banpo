@@ -60,6 +60,7 @@ export function SceneCanvas({ getScene }: Props) {
       drawScene(ctx, makeView(width, height, cameraX), {
         skyT,
         time: ms / 1000,
+        clock: Date.now() / 1000,
         bikeZ,
         toBanpo,
         labels,

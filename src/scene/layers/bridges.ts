@@ -8,45 +8,63 @@ const Z_END = 1060; // 강 건너편까지
 const SLICE = 20; // 다리를 20m씩 잘라서 먼 쪽부터 그린다
 const VISIBLE_RANGE = 2600; // 이보다 멀리 있는 다리는 건너뛴다
 
-// 다리 이름표: 전부 · 코스 위 다리만(장식용 마포대교 숨김) · 없음
+// 다리 이름표: 전부, 코스 위 다리만(장식용 마포대교 숨김), 없음
 export type LabelMode = 'all' | 'route' | 'none';
 
+// 다리 사이(깊이 z)에 끼워 그릴 것: 그 깊이보다 먼 교각 다음, 가까운 교각 전에 그린다 (예: 한강버스)
+export interface DepthLayer {
+  z: number;
+  draw: () => void;
+}
+
 // 카메라에서 먼 다리부터 그려야 가까운 다리가 앞을 덮는다
+// inserts가 있으면 다리를 깊이 구간으로 나눠, 먼 구간 -> 끼울 것 -> 가까운 구간 순서로 그린다
 export function drawBridges(
   ctx: CanvasRenderingContext2D,
   view: View,
   light: Light,
   time: number,
   labels: LabelMode,
+  inserts: readonly DepthLayer[] = [],
 ) {
-  const sorted = [...BRIDGES].sort((a, b) => Math.abs(b.x - view.camX) - Math.abs(a.x - view.camX));
-  for (const b of sorted) {
-    if (Math.abs(b.x - view.camX) > VISIBLE_RANGE) continue;
-    drawBridge(ctx, view, light, time, b, labels);
+  const sorted = [...BRIDGES]
+    .filter((b) => Math.abs(b.x - view.camX) <= VISIBLE_RANGE)
+    .sort((a, b) => Math.abs(b.x - view.camX) - Math.abs(a.x - view.camX));
+  const layers = [...inserts].sort((a, b) => b.z - a.z); // 먼 것부터
+
+  for (const b of sorted) if (b.island) drawIsland(ctx, view, light, b, b.island);
+
+  let maxZ = Infinity;
+  for (const layer of layers) {
+    for (const b of sorted) drawSlices(ctx, view, light, b, layer.z, maxZ);
+    layer.draw();
+    maxZ = layer.z;
   }
+  for (const b of sorted) drawSlices(ctx, view, light, b, -Infinity, maxZ);
+
+  for (const b of sorted) drawTop(ctx, view, light, time, b, labels);
 }
 
 // 카메라가 x0~x1 범위 밖이면 그쪽 옆면이 보인다 (정면이면 null)
 const visibleSide = (camX: number, x0: number, x1: number) =>
   camX < x0 ? x0 : camX > x1 ? x1 : null;
 
-function drawBridge(
+// 다리 양쪽 가장자리: 카메라에서 먼 쪽이 먼저
+const edgesOf = (view: View, b: Bridge) =>
+  [b.x - b.w / 2, b.x + b.w / 2].sort((p, q) => Math.abs(q - view.camX) - Math.abs(p - view.camX));
+
+// 깊이 minZ ~ maxZ 구간의 조각만. 먼 조각부터 가까운 조각 순서로: 교각 -> 상판 -> 난간
+function drawSlices(
   ctx: CanvasRenderingContext2D,
   view: View,
   light: Light,
-  time: number,
   b: Bridge,
-  labels: LabelMode,
+  minZ: number,
+  maxZ: number,
 ) {
-  // 다리 양쪽 가장자리: 카메라에서 먼 쪽이 먼저
-  const edges = [b.x - b.w / 2, b.x + b.w / 2].sort(
-    (p, q) => Math.abs(q - view.camX) - Math.abs(p - view.camX),
-  );
-
-  if (b.island) drawIsland(ctx, view, light, b, b.island);
-
-  // 먼 조각부터 가까운 조각 순서로: 교각 → 상판 → 난간
+  const edges = edgesOf(view, b);
   for (let za = Math.floor((Z_END - SLICE) / SLICE) * SLICE; za >= Z_START; za -= SLICE) {
+    if (za < minZ || za >= maxZ) continue;
     const zb = Math.min(Z_END, za + SLICE);
     const pierZ = Math.round(za / b.span) * b.span;
     if (pierZ >= za && pierZ < zb && pierZ > 20 && pierZ < 1000) {
@@ -71,7 +89,18 @@ function drawBridge(
       );
     }
   }
+}
 
+// 상판 위에 올라가는 것들: 아치, 다리 위 불빛, 지하철, 이름표 (교각보다 높아서 배와 겹치지 않는다)
+function drawTop(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  light: Light,
+  time: number,
+  b: Bridge,
+  labels: LabelMode,
+) {
+  const edges = edgesOf(view, b);
   // 아치: 한강대교는 교각마다 작은 아치, 동작대교는 가운데 큰 아치 두 개
   const lit = light.night > 0.3;
   for (const ex of edges) {
