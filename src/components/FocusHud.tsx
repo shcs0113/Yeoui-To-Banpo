@@ -108,9 +108,6 @@ function Controls({ onStart }: { onStart: () => void }) {
       </>
     );
   }
-  if (phase === 'done') {
-    // 임시: 완주 카드(FinishCard 커밋) 전까지
-    return <PillButton onClick={toSetup}>처음으로</PillButton>;
-  }
+  
   return null; // 5초 타임랩스 동안엔 버튼 없음
 }

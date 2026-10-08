@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatDuration, formatTimeOfDay, planOf } from './plan';
+import { formatDuration, formatHoursMinutes, formatTimeOfDay, planOf } from './plan';
 
 describe('planOf', () => {
   it('4사이클(30분·5분): 집중 4번 + 휴식 3번 = 135분, 27.2km, 마지막은 여의나루', () => {
@@ -36,5 +36,13 @@ describe('formatTimeOfDay', () => {
   it('24시간제 두 자리', () => {
     expect(formatTimeOfDay(new Date(2026, 9, 8, 22, 57).getTime())).toBe('22:57');
     expect(formatTimeOfDay(new Date(2026, 9, 8, 7, 5).getTime())).toBe('07:05');
+  });
+});
+
+describe('formatHoursMinutes', () => {
+  it('시:분 (분은 두 자리)', () => {
+    expect(formatHoursMinutes(120)).toBe('2:00');
+    expect(formatHoursMinutes(45)).toBe('0:45');
+    expect(formatHoursMinutes(605)).toBe('10:05');
   });
 });

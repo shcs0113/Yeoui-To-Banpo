@@ -29,3 +29,8 @@ export function formatTimeOfDay(ms: number): string {
   const d = new Date(ms);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
+
+// 120 -> "2:00", 45 -> "0:45" (완주 카드 집중 시간)
+export function formatHoursMinutes(totalMin: number): string {
+  return `${Math.floor(totalMin / 60)}:${String(totalMin % 60).padStart(2, '0')}`;
+}

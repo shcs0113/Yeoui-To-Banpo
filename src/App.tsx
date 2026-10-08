@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FinishCard } from './components/FinishCard';
 import { FocusHud } from './components/FocusHud';
 import { RestHud } from './components/RestHud';
 import { RouteBar } from './components/RouteBar';
@@ -45,6 +46,7 @@ function RidingScreen() {
   const togglePanel = (p: Exclude<Panel, null>) => setPanel((cur) => (cur === p ? null : p));
 
   const isSetup = state.phase === 'setup';
+  const done = state.phase === 'done';
   const showTitle = isSetup && !setupOpen;
   const startRide = () => {
     setSetupOpen(false); // 다음에 '처음으로' 오면 타이틀부터
@@ -56,7 +58,7 @@ function RidingScreen() {
 
   return (
     <div className="relative h-dvh w-full overflow-hidden bg-slate-900">
-      {/* 캔버스는 매 프레임 이 함수를 불러 지금 위치·하늘을 받아 간다 */}
+      {/* 캔버스는 매 프레임 이 함수를 불러 지금 위치, 하늘을 받아 간다 */}
       <SceneCanvas getScene={(t) => ({ ...derive(state, t), labels })} />
 
       <TopBar
@@ -64,7 +66,7 @@ function RidingScreen() {
         tag={
           isSetup
             ? undefined
-            : state.phase === 'done'
+            : done
               ? '완주'
               : `CYCLE ${state.cycle + 1} / ${state.settings.cycles}`
         }
@@ -95,6 +97,9 @@ function RidingScreen() {
 
       {/* 하단 독은 UI를 숨겨도 남긴다 (시간은 늘 보여야 하니까) */}
       {!isSetup && <FocusHud toBanpo={d.toBanpo} remainingMs={shownMs} onStart={startRide} />}
+
+      {/* 완주: 하단 독 자리에 결과 카드 */}
+      {done && <FinishCard onHistory={() => setPanel('history')} />}
 
       {/* 임시 개발 도구: 설정 모달(5단계)로 옮길 때까지 */}
       {!isSetup && !uiHidden && (
