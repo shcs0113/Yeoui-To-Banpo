@@ -34,7 +34,7 @@ export function TopBar(props: Props) {
       >
         여의도에서 반포까지
         {props.tag && (
-          <span className="ml-2 rounded-full bg-black/35 px-2.5 py-1 align-middle text-xs font-bold max-[420px]:hidden">
+          <span className="ml-2.5 align-middle text-xs font-bold tracking-[.06em] text-white/80 max-[420px]:hidden">
             {props.tag}
           </span>
         )}
