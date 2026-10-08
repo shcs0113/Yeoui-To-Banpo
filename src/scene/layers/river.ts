@@ -2,6 +2,7 @@ import { mixRGB, rgba } from '../color';
 import { fillPoly } from '../draw';
 import { type Light, shade } from '../lighting';
 import { NEAR, type View, project } from '../projection';
+import { RIPPLE_ROWS, rippleXs, rippleZ } from '../ripples';
 
 export const RIVER_Z0 = 19; // 강이 시작하는 깊이 (자전거길 바로 뒤)
 export const RIVER_Z1 = 1000; // 강 건너편 둔치
@@ -44,13 +45,15 @@ export function drawRiver(ctx: CanvasRenderingContext2D, view: View, light: Ligh
     g,
   );
 
-  // 물결 반짝임 40개 (위치는 고정 패턴, 시간에 따라 살짝 일렁임)
+  // 물결 반짝임: 장면에 고정된 점이라 다른 풍경과 같은 원근 속도로 흘러간다. 시간에 따라 살짝 일렁임
   ctx.fillStyle = `rgba(255,255,255,${0.06 + (1 - light.night) * 0.08})`;
-  for (let i = 0; i < 40; i++) {
-    const z = 60 + ((i * 97) % 900);
-    const x = view.camX + ((((i * 263) % 1000) - 500) * z) / 300 + Math.sin(time + i) * 3;
-    const [sx, sy] = project(view, [x, -1, z]);
-    ctx.fillRect(sx, sy, Math.max(1, (view.focal / z) * 4), 1);
+  for (let row = 0; row < RIPPLE_ROWS; row++) {
+    const z = rippleZ(row);
+    const half = ((view.width / 2) * z) / view.focal + 10; // 화면 폭이 그 깊이에서 몇 m인지 (+여유)
+    for (const x of rippleXs(row, view.camX - half, view.camX + half)) {
+      const [sx, sy] = project(view, [x + Math.sin(time + x) * 3, -1, z]);
+      ctx.fillRect(sx, sy, Math.max(1, (view.focal / z) * 4), 1);
+    }
   }
 
   // 내 쪽 잔디 (카메라 발밑부터 강 앞까지)
