@@ -33,6 +33,8 @@ export function drawBridges(
   const layers = [...inserts].sort((a, b) => b.z - a.z); // 먼 것부터
 
   for (const b of sorted) if (b.island) drawIsland(ctx, view, light, b, b.island);
+  // 상판 위의 것(아치, 불빛, 지하철)을 먼저: 카메라가 상판보다 낮아서, 상판에 가려져야 맞다
+  for (const b of sorted) drawTop(ctx, view, light, time, b);
 
   let maxZ = Infinity;
   for (const layer of layers) {
@@ -42,7 +44,7 @@ export function drawBridges(
   }
   for (const b of sorted) drawSlices(ctx, view, light, b, -Infinity, maxZ);
 
-  for (const b of sorted) drawTop(ctx, view, light, time, b, labels);
+  for (const b of sorted) drawLabel(ctx, view, b, labels); // 이름표는 화면 안내라 맨 위에
 }
 
 // 카메라가 x0~x1 범위 밖이면 그쪽 옆면이 보인다 (정면이면 null)
@@ -91,15 +93,8 @@ function drawSlices(
   }
 }
 
-// 상판 위에 올라가는 것들: 아치, 다리 위 불빛, 지하철, 이름표 (교각보다 높아서 배와 겹치지 않는다)
-function drawTop(
-  ctx: CanvasRenderingContext2D,
-  view: View,
-  light: Light,
-  time: number,
-  b: Bridge,
-  labels: LabelMode,
-) {
+// 상판 위에 올라가는 것들: 아치, 다리 위 불빛, 지하철 (상판보다 먼저 그려서 다리 밑에서는 가려진다)
+function drawTop(ctx: CanvasRenderingContext2D, view: View, light: Light, time: number, b: Bridge) {
   const edges = edgesOf(view, b);
   // 아치: 한강대교는 교각마다 작은 아치, 동작대교는 가운데 큰 아치 두 개
   const lit = light.night > 0.3;
@@ -122,7 +117,6 @@ function drawTop(
 
   if (light.night > 0.03) drawLamps(ctx, view, light, b, edges[1]);
   if (b.style === 'dongjak') drawTrain(ctx, view, light, time, b);
-  drawLabel(ctx, view, b, labels);
 }
 
 // 노들섬 (한강대교 아래)
