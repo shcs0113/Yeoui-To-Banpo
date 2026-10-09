@@ -44,5 +44,5 @@ export function drawScene(ctx: CanvasRenderingContext2D, view: View, frame: Fram
   if (show > 0 && nearBanpo > 0) drawFountain(ctx, view, time, show * nearBanpo); // 다리 앞 강물
   drawTrees(ctx, view, light);
   drawPath(ctx, view, light);
-  drawBike(ctx, view, frame.bikeZ, frame.toBanpo);
+  drawBike(ctx, view, light, time, frame.bikeZ, frame.toBanpo);
 }
