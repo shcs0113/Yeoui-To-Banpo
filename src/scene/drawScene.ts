@@ -1,5 +1,6 @@
 import { drawBike } from './layers/bike';
 import { boatLayers } from './layers/boats';
+import { drawBenches } from './layers/benches';
 import { type LabelMode, drawBridges } from './layers/bridges';
 import { drawCity } from './layers/city';
 import { drawMountains } from './layers/mountains';
@@ -15,7 +16,7 @@ import type { View } from './projection';
 
 // 한 프레임에 필요한 값 (카메라·화면 정보는 View에 따로)
 export interface Frame {
-  skyT: number; // 하늘 0 낮 → 0.5 밤 → 1 아침
+  skyT: number; // 하늘 0 낮 -> 0.5 밤 -> 1 아침
   time: number; // 경과 초 (반짝임·흔들림·지하철용)
   clock: number; // 실제 시각 (초). 새로고침해도 이어져야 하는 것용 (한강버스)
   bikeZ: number; // 자전거가 달리는 차선 깊이
@@ -43,6 +44,7 @@ export function drawScene(ctx: CanvasRenderingContext2D, view: View, frame: Fram
   drawBridges(ctx, view, light, time, frame.labels, boatLayers(ctx, view, light, frame.clock));
   if (show > 0 && nearBanpo > 0) drawFountain(ctx, view, time, show * nearBanpo); // 다리 앞 강물
   drawTrees(ctx, view, light);
+  drawBenches(ctx, view, light); // 휴식 지점 벤치 + 둥근 등 (나무 앞, 자전거길 뒤)
   drawPath(ctx, view, light);
   drawBike(ctx, view, light, time, frame.bikeZ, frame.toBanpo);
 }
