@@ -38,11 +38,11 @@ export function drawBridges(
 
   let maxZ = Infinity;
   for (const layer of layers) {
-    for (const b of sorted) drawSlices(ctx, view, light, b, layer.z, maxZ);
+    for (const b of sorted) drawSlices(ctx, view, light, time, b, layer.z, maxZ);
     layer.draw();
     maxZ = layer.z;
   }
-  for (const b of sorted) drawSlices(ctx, view, light, b, -Infinity, maxZ);
+  for (const b of sorted) drawSlices(ctx, view, light, time, b, -Infinity, maxZ);
 
   for (const b of sorted) drawLabel(ctx, view, b, labels); // 이름표는 화면 안내라 맨 위에
 }
@@ -60,6 +60,7 @@ function drawSlices(
   ctx: CanvasRenderingContext2D,
   view: View,
   light: Light,
+  time: number,
   b: Bridge,
   minZ: number,
   maxZ: number,
@@ -68,6 +69,10 @@ function drawSlices(
   for (let za = Math.floor((Z_END - SLICE) / SLICE) * SLICE; za >= Z_START; za -= SLICE) {
     if (za < minZ || za >= maxZ) continue;
     const zb = Math.min(Z_END, za + SLICE);
+    if (b.style === 'rail') {
+      drawRailSlice(ctx, view, light, time, b, za, zb); // 한강철교는 따로
+      continue;
+    }
     const pierZ = Math.round(za / b.span) * b.span;
     if (pierZ >= za && pierZ < zb && pierZ > 20 && pierZ < 1000) {
       if (b.style === 'banpo') {
@@ -347,4 +352,215 @@ function drawLabel(ctx: CanvasRenderingContext2D, view: View, b: Bridge, labels:
   ctx.closePath();
   ctx.fill();
   ctx.restore();
+}
+
+// 한강철교: 철도 다리 4개가 나란히, 상판 위로 낙타등 모양 트러스(철골 격자)
+const RAIL_OFFSETS = [-23, -8, 8, 23]; // 다리 중심에서 각 철교 중심까지 (m)
+const RAIL_W = 9; // 철교 하나의 폭
+const TRUSS_LOW = 4.5; // 트러스 높이 (교각 위)
+const TRUSS_HIGH = 8; // 트러스 높이 (경간 가운데)
+const PANELS = 8; // 경간 하나의 격자 칸 수
+const WHITE = 2; // 이 번호의 철교만 흰색
+
+// 기차: [몇 번 철교, 방향(1 = 강 건너로, -1 = 이쪽으로), 시간 오프셋(초)]
+// 안쪽 철교는 바깥 철교 상판에 가려서 안 보이니 바깥 두 개에만
+const TRAINS: readonly (readonly [number, 1 | -1, number])[] = [
+  [0, 1, 0],
+  [3, -1, 14],
+];
+const TRAIN_SPEED = 30; // m/s
+const TRAIN_LEN = 140; // 기차 길이 (m)
+const TRAIN_LOOP = 1700; // 한 바퀴 거리 (강 폭 + 안 보이는 구간)
+
+// 기차가 차지하는 깊이 구간 [앞, 뒤]
+function trainSpan(time: number, dir: 1 | -1, offset: number): [number, number] {
+  const p = ((time + offset) * TRAIN_SPEED) % TRAIN_LOOP; // 0 ~ LOOP
+  const head = dir === 1 ? p - 300 : 1300 - p; // 카메라 뒤에서 나와 강 건너로 (또는 반대)
+  return dir === 1 ? [head - TRAIN_LEN, head] : [head, head + TRAIN_LEN];
+}
+
+// 철교 4개를 한 조각(za ~ zb)씩: 먼 철교부터
+// 철교마다 먼 쪽 트러스 -> 기차 -> 가까운 쪽 트러스 -> 교각 -> 상판
+function drawRailSlice(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  light: Light,
+  time: number,
+  b: Bridge,
+  za: number,
+  zb: number,
+) {
+  const subs = RAIL_OFFSETS.map((o, i) => ({ cx: b.x + o, i })).sort(
+    (p, q) => Math.abs(q.cx - view.camX) - Math.abs(p.cx - view.camX),
+  );
+  for (const { cx, i } of subs) {
+    const x0 = cx - RAIL_W / 2;
+    const x1 = cx + RAIL_W / 2;
+    const [h, s, l] = i === WHITE ? [150, 6, 86] : [b.hue, b.sat, 46];
+    const color = shade(light, h, s, l, za);
+    const [farEdge, nearEdge] = [x0, x1].sort(
+      (p, q) => Math.abs(q - view.camX) - Math.abs(p - view.camX),
+    );
+
+    // 트러스와 기차는 상판 위라서 상판보다 먼저 (밑에서 보면 상판에 가려진다)
+    drawTruss(ctx, view, b, farEdge, za, zb, color);
+    for (const [track, dir, offset] of TRAINS) {
+      if (track !== i) continue;
+      const [ta, tb] = trainSpan(time, dir, offset);
+      const a = Math.max(ta, za, Z_START);
+      const c = Math.min(tb, zb, Z_END);
+      if (a < c) drawRailTrain(ctx, view, light, b, cx, a, c);
+    }
+    drawTruss(ctx, view, b, nearEdge, za, zb, color);
+    const panel = b.span / PANELS;
+    for (let z = Math.ceil(za / panel) * panel; z < zb; z += panel) {
+      if (z < 0 || z >= 1000) continue;
+      const y = trussTop(b, z);
+      strokeLine(ctx, view, [x0, y, z], [x1, y, z], color, 0.15); // 위 가로보
+    }
+
+    const pierZ = Math.round(za / b.span) * b.span;
+    if (pierZ >= za && pierZ < zb && pierZ > 20 && pierZ < 1000) {
+      drawRailPier(ctx, view, light, b, cx, pierZ);
+    }
+
+    // 상판: 아랫면 + 보이는 옆면
+    fillPoly(
+      ctx,
+      view,
+      [
+        [x0, b.yb, za],
+        [x1, b.yb, za],
+        [x1, b.yb, zb],
+        [x0, b.yb, zb],
+      ],
+      shade(light, h, s * 0.6, l * 0.5, za),
+    );
+    const sideX = visibleSide(view.camX, x0, x1);
+    if (sideX !== null) {
+      fillPoly(
+        ctx,
+        view,
+        [
+          [sideX, b.yb, za],
+          [sideX, b.yt, za],
+          [sideX, b.yt, zb],
+          [sideX, b.yb, zb],
+        ],
+        shade(light, h, s, l * 0.85, za),
+      );
+    }
+  }
+}
+
+// 낙타등: 교각 위는 낮고 경간 가운데가 높다
+function trussTop(b: Bridge, z: number) {
+  const t = (((z % b.span) + b.span) % b.span) / b.span;
+  return b.yt + TRUSS_LOW + (TRUSS_HIGH - TRUSS_LOW) * Math.sin(Math.PI * t);
+}
+
+// 트러스 한 면 (가장자리 ex): 아래 현, 위 현, X자 사재, 수직재
+function drawTruss(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  b: Bridge,
+  ex: number,
+  za: number,
+  zb: number,
+  color: string,
+) {
+  const panel = b.span / PANELS;
+  for (let z = Math.ceil(za / panel) * panel; z < zb; z += panel) {
+    if (z < 0 || z >= 1000) continue;
+    const z2 = z + panel;
+    const t1 = trussTop(b, z);
+    const t2 = z2 % b.span < 1e-6 ? b.yt + TRUSS_LOW : trussTop(b, z2); // 경간 끝은 다시 낮게
+    strokeLine(ctx, view, [ex, b.yt, z], [ex, b.yt, z2], color, 0.35); // 아래 현
+    strokeLine(ctx, view, [ex, t1, z], [ex, t2, z2], color, 0.35); // 위 현
+    strokeLine(ctx, view, [ex, b.yt, z], [ex, t2, z2], color, 0.18); // X자 사재
+    strokeLine(ctx, view, [ex, t1, z], [ex, b.yt, z2], color, 0.18);
+    strokeLine(ctx, view, [ex, b.yt, z], [ex, t1, z], color, 0.22); // 수직재
+  }
+}
+
+// 철교 위 기차: 옆면(흰 차체, 파란 띠, 창문 띠) + 지붕. 밤에는 창문에 불이 켜진다
+function drawRailTrain(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  light: Light,
+  b: Bridge,
+  cx: number,
+  za: number,
+  zb: number,
+) {
+  const x0 = cx - 1.6;
+  const x1 = cx + 1.6;
+  const y0 = b.yt + 0.4;
+  const y1 = b.yt + 3.6;
+  const sideX = visibleSide(view.camX, x0, x1);
+  if (sideX !== null) {
+    const band = (ya: number, yb: number, c: string) =>
+      fillPoly(
+        ctx,
+        view,
+        [
+          [sideX, ya, za],
+          [sideX, yb, za],
+          [sideX, yb, zb],
+          [sideX, ya, zb],
+        ],
+        c,
+      );
+    const windows =
+      light.night > 0.3
+        ? `rgba(255,236,190,${0.55 + 0.45 * light.night})`
+        : shade(light, 210, 25, 30, za);
+    band(y0, y1, shade(light, 210, 8, 78, za)); // 차체
+    band(y0 + 0.5, y0 + 0.8, shade(light, 215, 70, 45, za)); // 파란 띠
+    band(y0 + 1.4, y0 + 2.5, windows); // 창문 띠
+  }
+  fillPoly(
+    ctx,
+    view,
+    [
+      [x0, y1, za],
+      [x1, y1, za],
+      [x1, y1, zb],
+      [x0, y1, zb],
+    ],
+    shade(light, 210, 6, 70, za),
+  );
+}
+
+// 교각: 밝은 베이지, 위로 갈수록 넓어지고 꼭대기에 받침
+function drawRailPier(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  light: Light,
+  b: Bridge,
+  cx: number,
+  z: number,
+) {
+  fillPoly(
+    ctx,
+    view,
+    [
+      [cx - 2.2, -1, z - 2.5],
+      [cx + 2.2, -1, z - 2.5],
+      [cx + 3.2, b.yb, z - 2.5],
+      [cx - 3.2, b.yb, z - 2.5],
+    ],
+    shade(light, 35, 18, 72, z),
+  );
+  fillPoly(
+    ctx,
+    view,
+    [
+      [cx - 3.4, b.yb - 0.6, z - 2.6],
+      [cx + 3.4, b.yb - 0.6, z - 2.6],
+      [cx + 3.4, b.yb, z - 2.6],
+      [cx - 3.4, b.yb, z - 2.6],
+    ],
+    shade(light, 35, 14, 64, z),
+  );
 }

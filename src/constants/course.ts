@@ -3,7 +3,7 @@
 
 export const ROUTE_END_X = 6800; // 반포 도착 지점 (반포대교 바로 앞)
 
-export type BridgeStyle = 'girder' | 'arch' | 'dongjak' | 'banpo';
+export type BridgeStyle = 'girder' | 'arch' | 'dongjak' | 'banpo' | 'rail';
 
 export interface Bridge {
   name: string;
@@ -17,6 +17,7 @@ export interface Bridge {
   style: BridgeStyle; // 생김새
   deco?: boolean; // 코스 밖 장식용 (출발점 뒤 마포대교)
   island?: readonly [number, number]; // 다리 아래 섬이 있는 구간 (노들섬)
+  scenery?: boolean; // 풍경 전용: 진행 바, 미리보기 점프에 나오지 않는다 (한강철교)
 }
 
 export const BRIDGES: readonly Bridge[] = [
@@ -42,6 +43,18 @@ export const BRIDGES: readonly Bridge[] = [
     hue: 215,
     sat: 6,
     style: 'girder',
+  },
+  {
+    name: '한강철교',
+    x: 2650,
+    w: 58, // 철교 4개를 합친 폭
+    yb: 8,
+    yt: 9.5,
+    span: 62,
+    hue: 150,
+    sat: 40,
+    style: 'rail',
+    scenery: true,
   },
   {
     name: '한강대교',
@@ -77,6 +90,9 @@ export interface RoutePoint {
 // 경로 바, 미리보기에 찍히는 지점: 출발 -> 코스 위 다리들 -> 도착
 export const ROUTE: readonly RoutePoint[] = [
   { name: '여의나루', x: 0 },
-  ...BRIDGES.filter((b) => !b.deco && b.x < ROUTE_END_X).map((b) => ({ name: b.name, x: b.x })),
+  ...BRIDGES.filter((b) => !b.deco && !b.scenery && b.x < ROUTE_END_X).map((b) => ({
+    name: b.name,
+    x: b.x,
+  })),
   { name: '반포', x: ROUTE_END_X },
 ];
