@@ -11,6 +11,16 @@ const VISIBLE_RANGE = 2600; // 이보다 멀리 있는 다리는 건너뛴다
 // 다리 이름표: 전부, 코스 위 다리만(장식용 마포대교 숨김), 없음
 export type LabelMode = 'all' | 'route' | 'none';
 
+// 이번 프레임에 그린 이름표 자리 (클릭 판정용). 그릴 때마다 새로 채운다
+export interface LabelHit {
+  name: string;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+export const labelHits: LabelHit[] = [];
+
 // 다리 사이(깊이 z)에 끼워 그릴 것: 그 깊이보다 먼 교각 다음, 가까운 교각 전에 그린다 (예: 한강버스)
 export interface DepthLayer {
   z: number;
@@ -32,6 +42,7 @@ export function drawBridges(
     .sort((a, b) => Math.abs(b.x - view.camX) - Math.abs(a.x - view.camX));
   const layers = [...inserts].sort((a, b) => b.z - a.z); // 먼 것부터
 
+  labelHits.length = 0; // 지난 프레임 이름표 자리 비우기
   for (const b of sorted) if (b.island) drawIsland(ctx, view, light, b, b.island);
   // 상판 위의 것(아치, 불빛, 지하철)을 먼저: 카메라가 상판보다 낮아서, 상판에 가려져야 맞다
   for (const b of sorted) drawTop(ctx, view, light, time, b);
@@ -345,6 +356,8 @@ function drawLabel(ctx: CanvasRenderingContext2D, view: View, b: Bridge, labels:
   ctx.textAlign = 'center';
   ctx.fillStyle = '#fff';
   ctx.fillText(b.name, x, y - 6);
+  const half = ctx.measureText(b.name).width / 2 + 8; // 글자 폭 + 여유
+  labelHits.push({ name: b.name, x0: x - half, y0: y - 24, x1: x + half, y1: y + 12 });
   ctx.beginPath();
   ctx.moveTo(x - 5, y + 1);
   ctx.lineTo(x + 5, y + 1);

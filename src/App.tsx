@@ -7,6 +7,8 @@ import { RestHud } from './components/RestHud';
 import { RouteBar } from './components/RouteBar';
 import { RouteInfo } from './components/RouteInfo';
 import { SettingsModal } from './components/SettingsModal';
+import { PhotoModal } from './components/PhotoModal';
+import { PHOTOS } from './constants/photos';
 import { SetupCard } from './components/SetupCard';
 import { TitleScreen } from './components/TitleScreen';
 import { TopBar } from './components/TopBar';
@@ -18,7 +20,7 @@ import { derive } from './state/derive';
 import { useTimer } from './state/TimerContext';
 import { TimerProvider } from './state/TimerProvider';
 
-type Panel = 'history' | 'settings' | null;
+type Panel = 'history' | 'settings' | 'photos' | null;
 
 export default function App() {
   return (
@@ -44,6 +46,7 @@ function RidingScreen() {
   const [uiHidden, setUiHidden] = useState(false);
   const togglePanel = (p: Exclude<Panel, null>) => setPanel((cur) => (cur === p ? null : p));
   const closePanel = useCallback(() => setPanel(null), []);
+  const [photoName, setPhotoName] = useState(''); // 사진 창에 띄울 다리
 
   // 코스 미리보기 (자동 주행 포함)
   const pv = usePreview(state.settings);
@@ -154,6 +157,16 @@ function RidingScreen() {
     <div className="relative h-dvh w-full overflow-hidden bg-slate-900">
       {/* 캔버스는 매 프레임 이 함수를 불러 지금 위치, 하늘을 받아 간다 */}
       <SceneCanvas
+        // 이스터에그: 집중, 휴식 중에 사진 있는 다리 이름표를 누르면 사진 창
+        onLabelClick={
+          isSetup || previewing
+            ? undefined
+            : (name) => {
+                if (!PHOTOS[name]) return;
+                setPhotoName(name);
+                setPanel('photos');
+              }
+        }
         getScene={(t) => {
           // 미리보기는 매 프레임 그 시각의 화면으로 (자동 주행이 부드럽게 움직이도록)
           const p = pv.at(t);
@@ -227,6 +240,7 @@ function RidingScreen() {
       {/* 팝업 창 */}
       {panel === 'history' && <HistoryModal onClose={closePanel} />}
       {panel === 'settings' && <SettingsModal onClose={closePanel} />}
+      {panel === 'photos' && <PhotoModal name={photoName} onClose={closePanel} />}
     </div>
   );
 }

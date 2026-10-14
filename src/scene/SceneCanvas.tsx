@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { type MouseEvent, useEffect, useRef } from 'react';
 import { drawScene } from './drawScene';
-import type { LabelMode } from './layers/bridges';
+import { type LabelMode, labelHits } from './layers/bridges';
 import { approach, laneFor } from './lane';
 import { makeView } from './projection';
 
@@ -14,10 +14,11 @@ export interface SceneInput {
 
 interface Props {
   getScene: (now: number) => SceneInput; // 매 프레임 지금 시각을 주고 값을 받아 간다
+  onLabelClick?: (name: string) => void; // 다리 이름표를 눌렀을 때 (없으면 클릭 무시)
 }
 
 // 배경 캔버스. React는 캔버스를 한 번만 만들고, 그리기는 rAF 루프가 맡는다
-export function SceneCanvas({ getScene }: Props) {
+export function SceneCanvas({ getScene, onLabelClick }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // 루프가 읽을 최신 값. ref라서 바뀌어도 리렌더가 일어나지 않는다
@@ -76,5 +77,17 @@ export function SceneCanvas({ getScene }: Props) {
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />;
+  // 클릭한 자리가 이번 프레임에 그린 이름표 안이면 그 다리 이름을 알린다
+  const handleClick = (e: MouseEvent<HTMLCanvasElement>) => {
+    if (!onLabelClick) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const hit = labelHits.find((h) => x >= h.x0 && x <= h.x1 && y >= h.y0 && y <= h.y1);
+    if (hit) onLabelClick(hit.name);
+  };
+
+  return (
+    <canvas ref={canvasRef} onClick={handleClick} className="absolute inset-0 h-full w-full" />
+  );
 }
