@@ -545,7 +545,8 @@ function drawRailTrain(
   );
 }
 
-// 교각: 밝은 베이지, 위로 갈수록 넓어지고 꼭대기에 받침
+// 교각: 밝은 베이지 육면체. 위로 갈수록 넓어지고(앞에서 보면 사다리꼴) 꼭대기에 받침
+// 앞면 + 카메라 쪽 옆면만 그린다 (윗면은 상판에 가리고, 뒷면은 안 보인다)
 function drawRailPier(
   ctx: CanvasRenderingContext2D,
   view: View,
@@ -554,26 +555,51 @@ function drawRailPier(
   cx: number,
   z: number,
 ) {
+  const d = 2.5; // 앞뒤 두께의 반 (강 건너는 방향)
+  slantedBox(ctx, view, light, cx, -1, b.yb - 0.6, 2.2, 3.2, z, d, 72); // 몸통
+  slantedBox(ctx, view, light, cx, b.yb - 0.6, b.yb, 3.4, 3.4, z, d + 0.1, 64); // 받침
+}
+
+// 위아래 폭이 다른 육면체 (앞뒤 두께는 같다). 옆면은 앞면보다 어둡게
+function slantedBox(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  light: Light,
+  cx: number,
+  y0: number,
+  y1: number,
+  halfBot: number,
+  halfTop: number,
+  z: number,
+  d: number,
+  l: number,
+) {
+  // 카메라가 기둥 왼쪽 밖이면 왼쪽 옆면, 오른쪽 밖이면 오른쪽 옆면이 보인다
+  const side = view.camX < cx - halfBot ? -1 : view.camX > cx + halfBot ? 1 : 0;
+  if (side !== 0) {
+    const xb = cx + side * halfBot;
+    const xt = cx + side * halfTop;
+    fillPoly(
+      ctx,
+      view,
+      [
+        [xb, y0, z - d],
+        [xt, y1, z - d],
+        [xt, y1, z + d],
+        [xb, y0, z + d],
+      ],
+      shade(light, 35, 16, l - 16, z),
+    );
+  }
   fillPoly(
     ctx,
     view,
     [
-      [cx - 2.2, -1, z - 2.5],
-      [cx + 2.2, -1, z - 2.5],
-      [cx + 3.2, b.yb, z - 2.5],
-      [cx - 3.2, b.yb, z - 2.5],
+      [cx - halfBot, y0, z - d],
+      [cx + halfBot, y0, z - d],
+      [cx + halfTop, y1, z - d],
+      [cx - halfTop, y1, z - d],
     ],
-    shade(light, 35, 18, 72, z),
-  );
-  fillPoly(
-    ctx,
-    view,
-    [
-      [cx - 3.4, b.yb - 0.6, z - 2.6],
-      [cx + 3.4, b.yb - 0.6, z - 2.6],
-      [cx + 3.4, b.yb, z - 2.6],
-      [cx - 3.4, b.yb, z - 2.6],
-    ],
-    shade(light, 35, 14, 64, z),
+    shade(light, 35, 18, l, z),
   );
 }
