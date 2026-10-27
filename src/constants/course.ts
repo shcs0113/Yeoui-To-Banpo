@@ -3,7 +3,7 @@
 
 export const ROUTE_END_X = 6800; // 반포 도착 지점 (반포대교 바로 앞)
 
-export type BridgeStyle = 'girder' | 'arch' | 'dongjak' | 'banpo' | 'rail' | 'twin';
+export type BridgeStyle = 'girder' | 'arch' | 'dongjak' | 'banpo' | 'rail' | 'twin' | 'box';
 
 export interface Bridge {
   name: string;
@@ -36,13 +36,13 @@ export const BRIDGES: readonly Bridge[] = [
   {
     name: '원효대교',
     x: 1300,
-    w: 22,
-    yb: 12,
-    yt: 16,
+    w: 20,
+    yb: 11.8, // 경간 가운데 상자 아랫면 (교각 위에서는 HAUNCH만큼 더 내려간다)
+    yt: 14,
     span: 100,
-    hue: 215,
+    hue: 40,
     sat: 6,
-    style: 'girder',
+    style: 'box',
   },
   {
     name: '한강철교',

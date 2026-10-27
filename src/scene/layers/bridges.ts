@@ -88,6 +88,10 @@ function drawSlices(
       drawTwinSlice(ctx, view, light, b, za, zb); // 마포대교는 따로
       continue;
     }
+    if (b.style === 'box') {
+      drawBoxSlice(ctx, view, light, b, za, zb); // 원효대교는 따로
+      continue;
+    }
     const pierZ = Math.round(za / b.span) * b.span;
     if (pierZ >= za && pierZ < zb && pierZ > 20 && pierZ < 1000) {
       if (b.style === 'banpo') {
@@ -732,4 +736,150 @@ function hairline(ctx: CanvasRenderingContext2D, view: View, a: Vec3, c: Vec3, c
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
   ctx.stroke();
+}
+
+// 원효대교: 변단면 박스거더 (교각 위는 두껍고 경간 가운데는 얇다) + Y자 교각
+// 가운데 상자 + 양옆 날개. 상자 아랫면이 교각 사이에서 아치처럼 올라간다
+const BOX_HALF = 5.5; // 가운데 상자 반 폭 (나머지는 날개)
+const WING_T = 0.8; // 날개 두께
+const HAUNCH = 2.8; // 교각 위에서 상자가 더 깊어지는 만큼
+const BOX_STEP = 10; // 변단면이라 조각을 더 잘게 (m)
+const SEAM = 0.5; // 조각끼리 겹치는 길이 (가장자리가 반투명하게 칠해져 생기는 틈을 막는다)
+const Y_TOP = 5; // Y자 교각 갈래 바깥 끝 (다리 가운데에서)
+const Y_BOT = 2.2; // 아래 기둥 반 폭
+const Y_ARM = 2.6; // 갈래 윗부분 폭
+const Y_GAP = 0.2; // 갈래가 갈라지는 곳의 틈 (반)
+const Y_SPLIT = 0.45; // 높이의 몇 % 지점에서 두 갈래로 갈라지나
+const Y_D = 2; // 교각 앞뒤 두께의 반
+
+// z에서의 상자 아랫면 높이: 교각(span 배수) 위에서 가장 낮고, 경간 가운데서 yb
+function boxBottom(b: Bridge, z: number) {
+  const t = (((z % b.span) + b.span) % b.span) / b.span; // 0 ~ 1
+  const k = Math.cos(Math.PI * t) ** 2; // 교각 위 1, 가운데 0
+  return b.yb - HAUNCH * k * k; // 제곱을 한 번 더 해서 교각 근처에서만 깊어지게
+}
+
+// 조각(za ~ zb) 하나: 날개 아랫면 -> 상자 아랫면, 옆벽 -> 날개 끝 옆면 -> 교각
+// 날개가 먼저: 상자 아랫면이 더 낮아서(카메라에 가까워서) 밑에서 보면 날개를 덮는다
+function drawBoxSlice(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  light: Light,
+  b: Bridge,
+  za: number,
+  zb: number,
+) {
+  const x0 = b.x - b.w / 2;
+  const x1 = b.x + b.w / 2;
+  const bx0 = b.x - BOX_HALF;
+  const bx1 = b.x + BOX_HALF;
+  const wingY = b.yt - WING_T; // 날개 아랫면 높이
+
+  // 날개 아랫면 (그늘)
+  for (const [a, c] of [
+    [x0, bx0],
+    [bx1, x1],
+  ] as const) {
+    fillPoly(
+      ctx,
+      view,
+      [
+        [a, wingY, za - SEAM],
+        [c, wingY, za - SEAM],
+        [c, wingY, zb],
+        [a, wingY, zb],
+      ],
+      shade(light, b.hue, b.sat, 30, za),
+    );
+  }
+
+  // 상자: 10m씩 먼 쪽부터. 아랫면은 곡선이라 조각마다 양 끝 높이가 다르다
+  const boxSide = visibleSide(view.camX, bx0, bx1);
+  for (let z = zb; z > za; z -= BOX_STEP) {
+    const z0 = Math.max(za, z - BOX_STEP) - SEAM; // 앞 조각과 살짝 겹쳐서 이음새 틈을 없앤다
+    const y0 = boxBottom(b, z0);
+    const y1 = boxBottom(b, z);
+    fillPoly(
+      ctx,
+      view,
+      [
+        [bx0, y0, z0],
+        [bx1, y0, z0],
+        [bx1, y1, z],
+        [bx0, y1, z],
+      ],
+      shade(light, b.hue, b.sat, 26, z0),
+    );
+    // 상자 옆벽: 아랫면 곡선부터 날개 아래까지
+    if (boxSide !== null) {
+      fillPoly(
+        ctx,
+        view,
+        [
+          [boxSide, y0, z0],
+          [boxSide, wingY, z0],
+          [boxSide, wingY, z],
+          [boxSide, y1, z],
+        ],
+        shade(light, b.hue, b.sat, 42, z0),
+      );
+    }
+  }
+
+  // 날개 끝 옆면 + 흰 난간
+  const side = visibleSide(view.camX, x0, x1);
+  if (side !== null) {
+    fillPoly(
+      ctx,
+      view,
+      [
+        [side, wingY, za - SEAM],
+        [side, b.yt, za - SEAM],
+        [side, b.yt, zb],
+        [side, wingY, zb],
+      ],
+      shade(light, b.hue, b.sat, 62, za),
+    );
+    strokeLine(
+      ctx,
+      view,
+      [side, b.yt + 0.9, za],
+      [side, b.yt + 0.9, zb],
+      shade(light, 210, 4, 84, za),
+      0.1,
+    );
+  }
+
+  const pierZ = Math.round(za / b.span) * b.span;
+  if (pierZ >= za && pierZ < zb && pierZ > 20 && pierZ < 1000) {
+    drawYPier(ctx, view, light, b, pierZ);
+  }
+}
+
+// Y자 교각: 아래는 네모 기둥 하나, 위로 가며 두 갈래로 벌어져 상자를 받친다
+// 갈래도 두께가 있어서, 보이는 비탈면(바깥쪽, 갈래 사이 구멍 쪽)을 먼저 그리고 앞면으로 덮는다
+function drawYPier(ctx: CanvasRenderingContext2D, view: View, light: Light, b: Bridge, z: number) {
+  const top = boxBottom(b, z);
+  const split = -1 + (top + 1) * Y_SPLIT;
+  slantedBox(ctx, view, light, b.x, -1, split, Y_BOT, Y_BOT, z, Y_D, b.hue, b.sat, 56);
+
+  const fz = z - Y_D; // 앞면 깊이
+  const sideColor = shade(light, b.hue, b.sat, 42, z);
+  const fronts: Vec3[][] = [];
+  for (const s of [-1, 1]) {
+    // 갈래 앞면 꼭짓점: 안쪽 아래, 바깥 아래, 바깥 위, 안쪽 위
+    const inB: Vec3 = [b.x + s * Y_GAP, split, fz];
+    const outB: Vec3 = [b.x + s * Y_BOT, split, fz];
+    const outT: Vec3 = [b.x + s * Y_TOP, top, fz];
+    const inT: Vec3 = [b.x + s * (Y_TOP - Y_ARM), top, fz];
+    // 바깥 비탈은 카메라가 그 갈래 바깥쪽에 있을 때, 안쪽 비탈은 반대편에 있을 때 보인다
+    const edges: Vec3[][] = [];
+    if (s * (view.camX - (outB[0] + outT[0]) / 2) > 0) edges.push([outB, outT]);
+    if (s * (view.camX - (inB[0] + inT[0]) / 2) < 0) edges.push([inB, inT]);
+    for (const [p, q] of edges) {
+      fillPoly(ctx, view, [p, q, [q[0], q[1], z + Y_D], [p[0], p[1], z + Y_D]], sideColor);
+    }
+    fronts.push([inB, outB, outT, inT]);
+  }
+  for (const f of fronts) fillPoly(ctx, view, f, shade(light, b.hue, b.sat, 56, z));
 }
