@@ -88,6 +88,10 @@ function drawSlices(
       drawTwinSlice(ctx, view, light, b, za, zb); // 마포대교는 따로
       continue;
     }
+    if (b.style === 'dongjak') {
+      drawDongjakSlice(ctx, view, light, b, za, zb); // 동작대교는 따로
+      continue;
+    }
     if (b.style === 'box') {
       drawBoxSlice(ctx, view, light, b, za, zb); // 원효대교는 따로
       continue;
@@ -146,9 +150,11 @@ function drawTop(ctx: CanvasRenderingContext2D, view: View, light: Light, time: 
     if (b.style === 'dongjak') {
       const color = lit
         ? `rgba(110,225,255,${0.4 + 0.6 * light.night})`
-        : shade(light, 185, 35, 55, 450);
-      drawArch(ctx, view, b, 330, 500, 32, ex, color, 1.4, 8);
-      drawArch(ctx, view, b, 500, 670, 32, ex, color, 1.4, 8);
+        : shade(light, 195, 55, 52, 450);
+      // 랭거 아치: 얇은 아치가 경간마다 이어진다 (무게는 아래 상판이 받는다)
+      for (let z = DJ_ARCH_FROM; z < DJ_ARCH_TO; z += b.span) {
+        drawArch(ctx, view, b, z, z + b.span, 15, ex, color, 0.8, 9);
+      }
     }
   }
 
@@ -896,4 +902,152 @@ function drawYPier(ctx: CanvasRenderingContext2D, view: View, light: Light, b: B
     fronts.push([inB, outB, outT, inT]);
   }
   for (const f of fronts) fillPoly(ctx, view, f, shade(light, b.hue, b.sat, 56, z));
+}
+
+// 동작대교: 랭거 아치교. 가운데 지하철(4호선) + 양옆 차도가 한 상판
+// 강철판 상판 아래로 두꺼운 파란 강철 보(주형)가 길게 뻗고, 강 가운데 구간에 얇은 파란 아치가 이어진다
+// 교각은 네모 기둥 4개 위에 사다리꼴 가로보
+const DJ_ARCH_FROM = 220; // 아치가 시작하는 깊이
+const DJ_ARCH_TO = 800; // 아치가 끝나는 깊이
+const DJ_RAIL_HALF = 3; // 가운데 지하철 구간 반 폭
+const DJ_GIRDERS = 3; // 차도 한쪽마다 주형 개수
+const DJ_GIRDER_HALF = 0.35; // 주형 반 폭
+const DJ_GIRDER_H = 1.2; // 주형이 상판 아래로 튀어나온 높이
+const DJ_COLS = [-9, -3.2, 3.2, 9]; // 기둥 위치 (다리 가운데에서)
+const DJ_COL_HALF = 1.1; // 기둥 반 폭
+const DJ_CAP_H = 1.8; // 가로보 높이
+
+// 조각(za ~ zb) 하나: 아랫면 -> 주형 -> 바깥 옆면 -> 교각
+function drawDongjakSlice(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  light: Light,
+  b: Bridge,
+  za: number,
+  zb: number,
+) {
+  const x0 = b.x - b.w / 2;
+  const x1 = b.x + b.w / 2;
+
+  // 아랫면: 차도(회색 철판) + 가운데 지하철(어두운 콘크리트)
+  fillPoly(
+    ctx,
+    view,
+    [
+      [x0, b.yb, za],
+      [x1, b.yb, za],
+      [x1, b.yb, zb],
+      [x0, b.yb, zb],
+    ],
+    shade(light, 210, 5, 44, za),
+  );
+  fillPoly(
+    ctx,
+    view,
+    [
+      [b.x - DJ_RAIL_HALF, b.yb - 0.05, za],
+      [b.x + DJ_RAIL_HALF, b.yb - 0.05, za],
+      [b.x + DJ_RAIL_HALF, b.yb - 0.05, zb],
+      [b.x - DJ_RAIL_HALF, b.yb - 0.05, zb],
+    ],
+    shade(light, 200, 10, 26, za),
+  );
+
+  // 주형: 아래로 튀어나온 파란 강철 보. 카메라 쪽 옆면 -> 아랫면
+  const blue = shade(light, 198, 60, 46, za);
+  const blueDark = shade(light, 200, 55, 34, za);
+  const gy = b.yb - DJ_GIRDER_H;
+  for (const [a, c] of [
+    [x0, b.x - DJ_RAIL_HALF],
+    [b.x + DJ_RAIL_HALF, x1],
+  ] as const) {
+    for (let i = 1; i <= DJ_GIRDERS; i++) {
+      const gx = a + ((c - a) * i) / (DJ_GIRDERS + 1);
+      const sx = view.camX < gx ? gx - DJ_GIRDER_HALF : gx + DJ_GIRDER_HALF;
+      fillPoly(
+        ctx,
+        view,
+        [
+          [sx, gy, za],
+          [sx, b.yb, za],
+          [sx, b.yb, zb],
+          [sx, gy, zb],
+        ],
+        blueDark,
+      );
+      fillPoly(
+        ctx,
+        view,
+        [
+          [gx - DJ_GIRDER_HALF, gy, za],
+          [gx + DJ_GIRDER_HALF, gy, za],
+          [gx + DJ_GIRDER_HALF, gy, zb],
+          [gx - DJ_GIRDER_HALF, gy, zb],
+        ],
+        blue,
+      );
+    }
+  }
+
+  // 바깥 옆면: 파란 철판 + 흰 난간
+  const side = visibleSide(view.camX, x0, x1);
+  if (side !== null) {
+    fillPoly(
+      ctx,
+      view,
+      [
+        [side, b.yb, za],
+        [side, b.yt, za],
+        [side, b.yt, zb],
+        [side, b.yb, zb],
+      ],
+      shade(light, 198, 55, 50, za),
+    );
+    strokeLine(
+      ctx,
+      view,
+      [side, b.yt + 1, za],
+      [side, b.yt + 1, zb],
+      shade(light, 200, 6, 86, za),
+      0.1,
+    );
+  }
+
+  // 교각은 상판 다음에 (받침이 상판 아래로 내려와 있어서 밑에서 보면 앞에 있다)
+  const pierZ = Math.round(za / b.span) * b.span;
+  if (pierZ >= za && pierZ < zb && pierZ > 20 && pierZ < 1000) {
+    const capBottom = gy - DJ_CAP_H; // 주형 아래에 가로보
+    for (const off of DJ_COLS) {
+      slantedBox(
+        ctx,
+        view,
+        light,
+        b.x + off,
+        -1,
+        capBottom,
+        DJ_COL_HALF,
+        DJ_COL_HALF,
+        pierZ,
+        DJ_COL_HALF,
+        40,
+        4,
+        74,
+      );
+    }
+    slantedBox(
+      ctx,
+      view,
+      light,
+      b.x,
+      capBottom,
+      gy,
+      b.w / 2 - 1.5,
+      b.w / 2 - 0.5,
+      pierZ,
+      1.4,
+      40,
+      4,
+      80,
+    );
+  }
 }

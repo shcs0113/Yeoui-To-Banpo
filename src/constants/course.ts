@@ -72,7 +72,7 @@ export const BRIDGES: readonly Bridge[] = [
     name: '동작대교',
     x: 5300,
     w: 26,
-    yb: 12,
+    yb: 11.5, // 랭거 아치라 상판이 두껍다 (3.5m)
     yt: 15,
     span: 110,
     hue: 190,
