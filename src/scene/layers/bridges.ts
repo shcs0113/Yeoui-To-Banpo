@@ -1,7 +1,7 @@
 import { BRIDGES, type Bridge } from '../../constants/course';
 import { fillPoly, strokeLine } from '../draw';
 import { type Light, shade } from '../lighting';
-import { type Vec3, type View, clipSegment, project } from '../projection';
+import { type Vec3, type View, clipSegment, inView, project } from '../projection';
 
 const Z_START = -60; // 다리가 시작하는 깊이 (카메라 뒤쪽부터)
 const Z_END = 1060; // 강 건너편까지
@@ -394,8 +394,9 @@ function drawLabel(ctx: CanvasRenderingContext2D, view: View, b: Bridge, labels:
 // 한강철교: 철도 다리 4개가 나란히, 상판 위로 낙타등 모양 트러스(철골 격자)
 const RAIL_OFFSETS = [-23, -8, 8, 23]; // 다리 중심에서 각 철교 중심까지 (m)
 const RAIL_W = 9; // 철교 하나의 폭
-const TRUSS_LOW = 4.5; // 트러스 높이 (교각 위)
-const TRUSS_HIGH = 8; // 트러스 높이 (경간 가운데)
+const TRUSS_LOW = 4; // 트러스 높이 (경간 가운데, 오목하게 처진 곳)
+const TRUSS_HIGH = 10; // 트러스 높이 (교각 위 봉우리)
+const TRUSS_CURVE = 2.6; // 클수록 봉우리 근처가 가파르고 가운데가 평평하다
 const PANELS = 8; // 경간 하나의 격자 칸 수
 const WHITE = 2; // 이 번호의 철교만 흰색
 
@@ -431,6 +432,7 @@ function drawRailSlice(
     (p, q) => Math.abs(q.cx - view.camX) - Math.abs(p.cx - view.camX),
   );
   for (const { cx, i } of subs) {
+    if (!inView(view, cx, zb, RAIL_W)) continue; // 화면 밖 조각은 건너뛰기 (먼 쪽 zb에서도 밖이면 전부 밖)
     const x0 = cx - RAIL_W / 2;
     const x1 = cx + RAIL_W / 2;
     const [h, s, l] = i === WHITE ? [150, 6, 86] : [b.hue, b.sat, 46];
@@ -491,10 +493,11 @@ function drawRailSlice(
   }
 }
 
-// 낙타등: 교각 위는 낮고 경간 가운데가 높다
+// 교각 위가 뾰족하게 높고, 경간 가운데로 오목하게 처진다
 function trussTop(b: Bridge, z: number) {
-  const t = (((z % b.span) + b.span) % b.span) / b.span;
-  return b.yt + TRUSS_LOW + (TRUSS_HIGH - TRUSS_LOW) * Math.sin(Math.PI * t);
+  const t = (((z % b.span) + b.span) % b.span) / b.span; // 경간 안 위치 0 ~ 1
+  const u = Math.abs(2 * t - 1); // 교각 위 1 -> 가운데 0 -> 교각 위 1
+  return b.yt + TRUSS_LOW + (TRUSS_HIGH - TRUSS_LOW) * u ** TRUSS_CURVE;
 }
 
 // 트러스 한 면 (가장자리 ex): 아래 현, 위 현, X자 사재, 수직재
@@ -512,7 +515,7 @@ function drawTruss(
     if (z < 0 || z >= 1000) continue;
     const z2 = z + panel;
     const t1 = trussTop(b, z);
-    const t2 = z2 % b.span < 1e-6 ? b.yt + TRUSS_LOW : trussTop(b, z2); // 경간 끝은 다시 낮게
+    const t2 = trussTop(b, z2);
     strokeLine(ctx, view, [ex, b.yt, z], [ex, b.yt, z2], color, 0.35); // 아래 현
     strokeLine(ctx, view, [ex, t1, z], [ex, t2, z2], color, 0.35); // 위 현
     strokeLine(ctx, view, [ex, b.yt, z], [ex, t2, z2], color, 0.18); // X자 사재

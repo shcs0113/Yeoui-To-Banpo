@@ -47,7 +47,7 @@ export const BRIDGES: readonly Bridge[] = [
   {
     name: '한강철교',
     x: 2650,
-    w: 58, // 철교 4개를 합친 폭
+    w: 55, // 철교 4개를 합친 폭 (바깥 철교 중심 ±23 + 반 폭 4.5)
     yb: 8,
     yt: 9.5,
     span: 62,
