@@ -59,7 +59,7 @@ export const BRIDGES: readonly Bridge[] = [
   {
     name: '한강대교',
     x: 3200,
-    w: 20,
+    w: 27, // 쌍둥이 다리 12m + 틈 3m + 12m
     yb: 12,
     yt: 15,
     span: 120,

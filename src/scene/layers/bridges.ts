@@ -84,7 +84,7 @@ function drawSlices(
       drawRailSlice(ctx, view, light, time, b, za, zb); // 한강철교는 따로
       continue;
     }
-    if (b.style === 'twin') {
+    if (b.style === 'twin' || b.style === 'arch') {
       drawTwinSlice(ctx, view, light, b, za, zb); // 마포대교는 따로
       continue;
     }
@@ -123,12 +123,25 @@ function drawTop(ctx: CanvasRenderingContext2D, view: View, light: Light, time: 
   // 아치: 한강대교는 교각마다 작은 아치, 동작대교는 가운데 큰 아치 두 개
   const lit = light.night > 0.3;
   for (const ex of edges) {
-    if (b.style === 'arch') {
+    if (b.style === 'arch' && ex === edges[0]) {
+      // 쌍둥이 다리 두 개, 다리마다 양쪽 가장자리에 흰 아치 (4줄을 한 번만, 먼 가장자리부터)
       const color = lit
         ? `rgba(255,236,190,${0.4 + 0.6 * light.night})`
-        : shade(light, 200, 25, 47, 500);
-      for (let z = 120; z < 1000; z += b.span)
-        drawArch(ctx, view, b, z, z + b.span, 16, ex, color, 0.9, 6);
+        : shade(light, 210, 6, 90, 300);
+      const half = (TWIN_W + TWIN_GAP) / 2; // 다리 가운데에서 각 쌍둥이 다리 가운데까지
+      const archEdges = [
+        -half - TWIN_W / 2,
+        -half + TWIN_W / 2,
+        half - TWIN_W / 2,
+        half + TWIN_W / 2,
+      ]
+        .map((o) => b.x + o)
+        .sort((p, q) => Math.abs(q - view.camX) - Math.abs(p - view.camX));
+      for (const ax of archEdges) {
+        for (let z = 120; z < 1000; z += b.span) {
+          drawArch(ctx, view, b, z, z + b.span, 14, ax, color, 1.1, 9);
+        }
+      }
     }
     if (b.style === 'dongjak') {
       const color = lit
