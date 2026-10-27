@@ -1,7 +1,7 @@
 import { BRIDGES, type Bridge } from '../../constants/course';
 import { fillPoly, strokeLine } from '../draw';
 import { type Light, shade } from '../lighting';
-import { type Vec3, type View, project } from '../projection';
+import { type Vec3, type View, clipSegment, project } from '../projection';
 
 const Z_START = -60; // 다리가 시작하는 깊이 (카메라 뒤쪽부터)
 const Z_END = 1060; // 강 건너편까지
@@ -82,6 +82,10 @@ function drawSlices(
     const zb = Math.min(Z_END, za + SLICE);
     if (b.style === 'rail') {
       drawRailSlice(ctx, view, light, time, b, za, zb); // 한강철교는 따로
+      continue;
+    }
+    if (b.style === 'twin') {
+      drawTwinSlice(ctx, view, light, b, za, zb); // 마포대교는 따로
       continue;
     }
     const pierZ = Math.round(za / b.span) * b.span;
@@ -556,11 +560,12 @@ function drawRailPier(
   z: number,
 ) {
   const d = 2.5; // 앞뒤 두께의 반 (강 건너는 방향)
-  slantedBox(ctx, view, light, cx, -1, b.yb - 0.6, 2.2, 3.2, z, d, 72); // 몸통
-  slantedBox(ctx, view, light, cx, b.yb - 0.6, b.yb, 3.4, 3.4, z, d + 0.1, 64); // 받침
+  slantedBox(ctx, view, light, cx, -1, b.yb - 0.6, 2.2, 3.2, z, d, 35, 18, 72); // 몸통
+  slantedBox(ctx, view, light, cx, b.yb - 0.6, b.yb, 3.4, 3.4, z, d + 0.1, 35, 18, 64); // 받침
 }
 
-// 위아래 폭이 다른 육면체 (앞뒤 두께는 같다). 옆면은 앞면보다 어둡게
+// 위아래 폭이 다른 육면체 (앞뒤 두께는 같다). 색은 hue, sat, l로 받고 옆면은 앞면보다 어둡게
+// 한강철교 교각(베이지)과 마포대교 교각(회청색)이 같이 쓴다
 function slantedBox(
   ctx: CanvasRenderingContext2D,
   view: View,
@@ -572,6 +577,8 @@ function slantedBox(
   halfTop: number,
   z: number,
   d: number,
+  hue: number,
+  sat: number,
   l: number,
 ) {
   // 카메라가 기둥 왼쪽 밖이면 왼쪽 옆면, 오른쪽 밖이면 오른쪽 옆면이 보인다
@@ -588,7 +595,7 @@ function slantedBox(
         [xt, y1, z + d],
         [xb, y0, z + d],
       ],
-      shade(light, 35, 16, l - 16, z),
+      shade(light, hue, sat - 2, l - 16, z),
     );
   }
   fillPoly(
@@ -600,6 +607,129 @@ function slantedBox(
       [cx + halfTop, y1, z - d],
       [cx - halfTop, y1, z - d],
     ],
-    shade(light, 35, 18, l, z),
+    shade(light, hue, sat, l, z),
   );
+}
+
+// 마포대교: 쌍둥이 다리 두 개가 나란히. 교각은 네모 기둥 2개 + 위로 넓어지는 사다리꼴 받침
+const TWIN_W = 12; // 다리 하나의 폭
+const TWIN_GAP = 3; // 두 다리 사이 틈
+const COL_HALF = 1.1; // 기둥 반 폭
+const COL_OFF = 3.2; // 다리 가운데에서 기둥 가운데까지
+const CAP_H = 2.6; // 받침 높이
+const CAP_INSET = 0.8; // 받침 윗변이 상판 가장자리보다 안쪽으로 들어간 만큼
+const UNDER_LINES = 3; // 상판 아랫면 선 개수
+
+// 조각(za ~ zb) 하나: 먼 다리부터, 다리마다 상판 -> 교각
+// 교각을 나중에: 받침이 상판 아래로 매달려 있어서, 밑에서 보면 같은 조각의 뒤쪽 상판보다 앞에 있다
+function drawTwinSlice(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  light: Light,
+  b: Bridge,
+  za: number,
+  zb: number,
+) {
+  const half = (TWIN_W + TWIN_GAP) / 2;
+  const subs = [b.x - half, b.x + half].sort(
+    (p, q) => Math.abs(q - view.camX) - Math.abs(p - view.camX),
+  );
+  const pierZ = Math.round(za / b.span) * b.span;
+  const hasPier = pierZ >= za && pierZ < zb && pierZ > 20 && pierZ < 1000;
+
+  for (const cx of subs) {
+    const x0 = cx - TWIN_W / 2;
+    const x1 = cx + TWIN_W / 2;
+
+    // 상판 아랫면 + 단순한 세로선
+    fillPoly(
+      ctx,
+      view,
+      [
+        [x0, b.yb, za],
+        [x1, b.yb, za],
+        [x1, b.yb, zb],
+        [x0, b.yb, zb],
+      ],
+      shade(light, b.hue, b.sat, 30, za),
+    );
+    const lineColor = shade(light, b.hue, b.sat, 22, za);
+    for (let i = 1; i <= UNDER_LINES; i++) {
+      const x = x0 + (TWIN_W * i) / (UNDER_LINES + 1);
+      hairline(ctx, view, [x, b.yb, za], [x, b.yb, zb], lineColor);
+    }
+
+    // 바깥 옆면: 밝은 회청색 철판 + 흰 난간
+    const sideX = visibleSide(view.camX, x0, x1);
+    if (sideX !== null) {
+      fillPoly(
+        ctx,
+        view,
+        [
+          [sideX, b.yb, za],
+          [sideX, b.yt, za],
+          [sideX, b.yt, zb],
+          [sideX, b.yb, zb],
+        ],
+        shade(light, b.hue, b.sat + 6, 60, za),
+      );
+      strokeLine(
+        ctx,
+        view,
+        [sideX, b.yt + 1, za],
+        [sideX, b.yt + 1, zb],
+        shade(light, b.hue, 6, 86, za),
+        0.12,
+      );
+    }
+
+    if (hasPier) drawTwinPier(ctx, view, light, b, cx, pierZ);
+  }
+}
+
+// 교각: 네모 기둥 2개 위에 사다리꼴 받침 (아랫변은 두 기둥 바깥 면, 윗변은 상판보다 조금 안쪽)
+function drawTwinPier(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  light: Light,
+  b: Bridge,
+  cx: number,
+  z: number,
+) {
+  const capBottom = b.yb - CAP_H;
+  for (const off of [-COL_OFF, COL_OFF]) {
+    slantedBox(
+      ctx,
+      view,
+      light,
+      cx + off,
+      -1,
+      capBottom,
+      COL_HALF,
+      COL_HALF,
+      z,
+      COL_HALF,
+      210,
+      6,
+      50,
+    );
+  }
+  const capBot = COL_OFF + COL_HALF;
+  const capTop = TWIN_W / 2 - CAP_INSET;
+  slantedBox(ctx, view, light, cx, capBottom, b.yb, capBot, capTop, z, 1.4, 210, 6, 58);
+}
+
+// 굵기가 거리와 상관없이 일정한 선 (strokeLine은 가까울수록 굵어진다)
+function hairline(ctx: CanvasRenderingContext2D, view: View, a: Vec3, c: Vec3, color: string) {
+  const seg = clipSegment(a, c);
+  if (!seg) return;
+  const [p, q] = seg;
+  const [x1, y1] = project(view, p);
+  const [x2, y2] = project(view, q);
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.stroke();
 }

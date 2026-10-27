@@ -3,7 +3,7 @@
 
 export const ROUTE_END_X = 6800; // 반포 도착 지점 (반포대교 바로 앞)
 
-export type BridgeStyle = 'girder' | 'arch' | 'dongjak' | 'banpo' | 'rail';
+export type BridgeStyle = 'girder' | 'arch' | 'dongjak' | 'banpo' | 'rail' | 'twin';
 
 export interface Bridge {
   name: string;
@@ -24,13 +24,13 @@ export const BRIDGES: readonly Bridge[] = [
   {
     name: '마포대교',
     x: -260,
-    w: 24,
+    w: 27, // 쌍둥이 다리 12m + 틈 3m + 12m
     yb: 12,
-    yt: 15,
-    span: 100,
-    hue: 215,
-    sat: 6,
-    style: 'girder',
+    yt: 14.5,
+    span: 60,
+    hue: 210,
+    sat: 10,
+    style: 'twin',
     deco: true,
   },
   {
