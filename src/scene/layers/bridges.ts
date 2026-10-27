@@ -96,17 +96,14 @@ function drawSlices(
       drawBoxSlice(ctx, view, light, b, za, zb); // 원효대교는 따로
       continue;
     }
+    if (b.style === 'banpo') {
+      drawBanpoSlice(ctx, view, light, b, za, zb); // 반포대교 + 잠수교는 따로
+      continue;
+    }
     const pierZ = Math.round(za / b.span) * b.span;
     if (pierZ >= za && pierZ < zb && pierZ > 20 && pierZ < 1000) {
-      if (b.style === 'banpo') {
-        // 반포대교는 2층: 아래 잠수교 + 위 반포대교
-        drawPier(ctx, view, light, b, pierZ, 0.6, -1, 0.42);
-        drawPier(ctx, view, light, b, pierZ, b.yb, 2.2, 0.18);
-      } else {
-        drawPier(ctx, view, light, b, pierZ, b.yb);
-      }
+      drawPier(ctx, view, light, b, pierZ, b.yb);
     }
-    if (b.style === 'banpo') drawDeck(ctx, view, light, b, za, zb, 0.6, 2.2, 20, 46); // 잠수교
     drawDeck(ctx, view, light, b, za, zb, b.yb, b.yt, b.w, 54);
     for (const ex of edges) {
       strokeLine(
@@ -1049,5 +1046,153 @@ function drawDongjakSlice(
       4,
       80,
     );
+  }
+}
+
+const JS_HALF = 9; // 잠수교 반 폭
+const JS_YB = 0.6; // 잠수교 아랫면 (솟지 않은 곳)
+const JS_T = 1.6; // 잠수교 두께
+const JS_LIFT = 4; // 가운데 솟은 높이
+const JS_LIFT_FROM = 380; // 솟기 시작하는 깊이
+const JS_LIFT_TO = 620; // 다시 내려오는 깊이
+const JS_STEP = 10; // 솟은 곳을 그리려고 잘게 나누는 조각 (m)
+const BP_SEAM = 0.5; // 조각 이음새 틈 막기
+const BP_COL_X = 10.8; // 기둥 위치 (다리 가운데에서)
+const BP_COL_HALF = 1.2; // 기둥 반 폭
+const BP_CAP_H = 1.6; // 위 가로보 두께
+const BP_LOW_CAP_H = 0.9; // 아래 가로보 두께 (잠수교 받침)
+const BP_BOXES = 3; // 상자형 보 개수
+const BP_BOX_HALF = 2; // 상자형 보 반 폭
+const BP_BOX_H = 1.4; // 상자형 보 깊이
+
+// z에서 잠수교가 솟은 높이 (가운데 구간에서만, 부드럽게)
+function jamsuLift(z: number) {
+  const t = (z - JS_LIFT_FROM) / (JS_LIFT_TO - JS_LIFT_FROM);
+  if (t <= 0 || t >= 1) return 0;
+  return JS_LIFT * Math.sin(Math.PI * t) ** 2;
+}
+
+// 반포대교 + 잠수교: 잠수교 -> 위 다리 상판 -> 교각 (교각 하나가 두 다리를 같이 받친다)
+function drawBanpoSlice(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  light: Light,
+  b: Bridge,
+  za: number,
+  zb: number,
+) {
+  const gray = (l: number, z = za) => shade(light, 210, 4, l, z);
+  const quad = (x0: number, x1: number, y: number, c: string) =>
+    fillPoly(
+      ctx,
+      view,
+      [
+        [x0, y, za],
+        [x1, y, za],
+        [x1, y, zb],
+        [x0, y, zb],
+      ],
+      c,
+    );
+  const wall = (x: number, y0: number, y1: number, c: string) =>
+    fillPoly(
+      ctx,
+      view,
+      [
+        [x, y0, za],
+        [x, y1, za],
+        [x, y1, zb],
+        [x, y0, zb],
+      ],
+      c,
+    );
+
+  // 잠수교: 솟은 곳이 있어서 10m씩. 윗면(카메라가 더 높으니 보인다) + 보이는 옆면
+  const jsSide = visibleSide(view.camX, b.x - JS_HALF, b.x + JS_HALF);
+  for (let z = zb; z > za; z -= JS_STEP) {
+    const z0 = Math.max(za, z - JS_STEP) - BP_SEAM;
+    const t0 = JS_YB + JS_T + jamsuLift(z0);
+    const t1 = JS_YB + JS_T + jamsuLift(z);
+    fillPoly(
+      ctx,
+      view,
+      [
+        [b.x - JS_HALF, t0, z0],
+        [b.x + JS_HALF, t0, z0],
+        [b.x + JS_HALF, t1, z],
+        [b.x - JS_HALF, t1, z],
+      ],
+      gray(34, z0),
+    );
+    if (jsSide !== null)
+      fillPoly(
+        ctx,
+        view,
+        [
+          [jsSide, t0 - JS_T, z0],
+          [jsSide, t0, z0],
+          [jsSide, t1, z],
+          [jsSide, t1 - JS_T, z],
+        ],
+        gray(48, z0),
+      );
+  }
+
+  // 위 다리: 아랫면 -> 상자형 보 (옆면 -> 아랫면) -> 바깥 옆면, 난간
+  const x0 = b.x - b.w / 2;
+  const x1 = b.x + b.w / 2;
+  quad(x0, x1, b.yb, gray(52));
+  const by = b.yb - BP_BOX_H;
+  for (let i = 0; i < BP_BOXES; i++) {
+    const gx = x0 + (b.w * (i + 0.5)) / BP_BOXES;
+    const sx = view.camX < gx ? gx - BP_BOX_HALF : gx + BP_BOX_HALF;
+    if (Math.abs(view.camX - gx) > BP_BOX_HALF) wall(sx, by, b.yb, gray(38)); // 바로 밑이면 옆면 안 보임
+    quad(gx - BP_BOX_HALF, gx + BP_BOX_HALF, by, gray(60));
+  }
+  const side = visibleSide(view.camX, x0, x1);
+  if (side !== null) {
+    wall(side, b.yb, b.yt, gray(64));
+    strokeLine(ctx, view, [side, b.yt + 1, za], [side, b.yt + 1, zb], gray(78), 0.1);
+  }
+
+  // 교각 (상판 다음에): 기둥 2개 -> 아래 가로보(잠수교) -> 위 가로보(반포대교)
+  const pierZ = Math.round(za / b.span) * b.span;
+  if (pierZ >= za && pierZ < zb && pierZ > 20 && pierZ < 1000) {
+    const lowTop = JS_YB + jamsuLift(pierZ); // 잠수교 아랫면, 솟은 곳에선 같이 올라감
+    const capY = by - BP_CAP_H; // 상자형 보 아래에 위 가로보
+    for (const s of [-1, 1]) {
+      slantedBox(
+        ctx,
+        view,
+        light,
+        b.x + s * BP_COL_X,
+        -1,
+        capY,
+        BP_COL_HALF,
+        BP_COL_HALF,
+        pierZ,
+        BP_COL_HALF,
+        210,
+        4,
+        60,
+      );
+    }
+    const span = BP_COL_X + BP_COL_HALF;
+    slantedBox(
+      ctx,
+      view,
+      light,
+      b.x,
+      lowTop - BP_LOW_CAP_H,
+      lowTop,
+      span,
+      span,
+      pierZ,
+      1.3,
+      210,
+      4,
+      54,
+    );
+    slantedBox(ctx, view, light, b.x, capY, by, span, b.w / 2 - 0.6, pierZ, 1.3, 210, 4, 66);
   }
 }
