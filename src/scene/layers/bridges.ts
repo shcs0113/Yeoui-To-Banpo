@@ -440,11 +440,6 @@ function drawRailSlice(
       strokeLine(ctx, view, [x0, y, z], [x1, y, z], color, 0.15); // 위 가로보
     }
 
-    const pierZ = Math.round(za / b.span) * b.span;
-    if (pierZ >= za && pierZ < zb && pierZ > 20 && pierZ < 1000) {
-      drawRailPier(ctx, view, light, b, cx, pierZ);
-    }
-
     // 상판: 아랫면 + 보이는 옆면
     fillPoly(
       ctx,
@@ -470,6 +465,12 @@ function drawRailSlice(
         ],
         shade(light, h, s, l * 0.85, za),
       );
+    }
+
+    // 교각은 상판 다음에: 상판 아래로 받치고 있어서, 밑에서 보면 같은 조각의 뒤쪽 상판보다 앞에 있다
+    const pierZ = Math.round(za / b.span) * b.span;
+    if (pierZ >= za && pierZ < zb && pierZ > 20 && pierZ < 1000) {
+      drawRailPier(ctx, view, light, b, cx, pierZ);
     }
   }
 }
