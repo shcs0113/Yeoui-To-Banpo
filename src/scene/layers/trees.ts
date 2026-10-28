@@ -2,13 +2,14 @@ import { type Light, shade } from '../lighting';
 import { type View, inView, project } from '../projection';
 import { hash01, makeRandom } from '../random';
 import { MAPLE_HUES } from './leaves';
+import type { Theme } from '../../state/types';
 
 interface Tree {
   x: number;
   z: number; // 자전거길 뒤 둔치 (16.5 ~ 18.5)
   h: number; // 높이 (m)
   hue: number;
-  maple: boolean; // 가을에 단풍나무로 그릴 나무 (나머지는 가을에도 상록수)
+  maple: boolean; // 가을에 단풍나무로 그릴 나무 (나머지는 가을에도 상록수, 겨울엔 전부 상록수)
   mapleHue: number; // 단풍 색
 }
 
@@ -32,16 +33,22 @@ const TREES: readonly Tree[] = (() => {
   return list.sort((a, b) => b.z - a.z); // 먼 나무부터
 })();
 
-export function drawTrees(ctx: CanvasRenderingContext2D, view: View, light: Light, autumn = false) {
+export function drawTrees(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  light: Light,
+  theme: Theme = 'summer',
+) {
   for (const t of TREES) {
     if (!inView(view, t.x, t.z, 4)) continue;
-    if (autumn && t.maple) drawMaple(ctx, view, light, t);
-    else drawTree(ctx, view, light, t);
+    if (theme === 'autumn' && t.maple) drawMaple(ctx, view, light, t);
+    else drawTree(ctx, view, light, t, theme === 'winter');
   }
 }
 
 // 나무는 면 하나하나를 3D로 만들지 않고, 밑동 위치만 투영한 뒤 화면 크기로 그린다 (빌보드)
-function drawTree(ctx: CanvasRenderingContext2D, view: View, light: Light, t: Tree) {
+// snowy: 겨울이면 단마다 위쪽에 눈을 얹는다
+function drawTree(ctx: CanvasRenderingContext2D, view: View, light: Light, t: Tree, snowy = false) {
   const k = view.focal / t.z; // 1m가 화면에서 몇 px인지
   const [bx, by] = project(view, [t.x, 0, t.z]);
   const H = t.h * k;
@@ -76,7 +83,37 @@ function drawTree(ctx: CanvasRenderingContext2D, view: View, light: Light, t: Tr
     ctx.lineTo(bx, yt);
     ctx.closePath();
     ctx.fill();
+    if (snowy) drawSnowCap(ctx, light, bx, yb, yt, w, i === 2);
   }
+}
+
+// 삼각형 한 단 위쪽에 쌓인 눈: 꼭대기에서 내려오다 아래 끝이 들쭉날쭉 (흘러내린 눈)
+function drawSnowCap(
+  ctx: CanvasRenderingContext2D,
+  light: Light,
+  bx: number,
+  yb: number,
+  yt: number,
+  w: number,
+  top: boolean,
+) {
+  const h = yb - yt; // 이 단의 높이 (px)
+  const d = top ? 0.55 : 0.42; // 꼭대기에서 어디까지 눈이 덮나 (맨 위 단은 더 많이)
+  const yc = yt + h * d; // 눈이 끝나는 높이
+  const wc = w * d; // 그 높이에서 삼각형 반 폭
+  ctx.fillStyle = shade(light, 210, 30, 94);
+  ctx.beginPath();
+  ctx.moveTo(bx, yt);
+  ctx.lineTo(bx + wc, yc);
+  // 아래 끝: 오른쪽에서 왼쪽으로 가며 아래, 위 번갈아
+  const n = 4;
+  for (let j = 1; j < n; j++) {
+    const x = bx + wc - (2 * wc * j) / n;
+    ctx.lineTo(x, yc + (j % 2 === 1 ? h * 0.1 : -h * 0.04));
+  }
+  ctx.lineTo(bx - wc, yc);
+  ctx.closePath();
+  ctx.fill();
 }
 
 // 단풍나무: 둥근 수관을 가로 띠 3개로 (위 밝게 -> 아래 어둡게)

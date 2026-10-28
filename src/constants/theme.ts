@@ -4,4 +4,5 @@ import type { Theme } from '../state/types';
 export const THEME_OPTIONS: readonly { value: Theme; label: string }[] = [
   { value: 'summer', label: '여름' },
   { value: 'autumn', label: '가을' },
+  { value: 'winter', label: '겨울' },
 ];

@@ -3,6 +3,7 @@ import { fillPoly } from '../draw';
 import { type Light, shade } from '../lighting';
 import { NEAR, type View, project } from '../projection';
 import { RIPPLE_ROWS, rippleXs, rippleZ } from '../ripples';
+import type { Theme } from '../../state/types';
 
 export const WATER_Y = -1; // 강물 높이 (둔치보다 1m 낮다)
 export const RIVER_Z0 = 19; // 강이 시작하는 깊이 (자전거길 바로 뒤)
@@ -10,14 +11,23 @@ export const RIVER_Z1 = 1000; // 강 건너편 둔치
 const FAR_BANK_Z = 1100; // 건너편 도시가 시작하는 깊이
 const SPAN = 20000; // 좌우로 충분히 넓게
 
-// 앞에서부터: 내 쪽 잔디, 강물(+ 반짝임), 건너편 둔치. 가을이면 땅이 마른 황갈색
+type HSL = readonly [number, number, number];
+// 계절마다 땅 색 [색상, 채도, 밝기]: 내 쪽 잔디, 건너편 둔치
+const GROUND: Record<Theme, { near: HSL; far: HSL }> = {
+  summer: { near: [130, 25, 24], far: [140, 12, 24] },
+  autumn: { near: [44, 38, 29], far: [38, 18, 26] }, // 마른 황갈색
+  winter: { near: [212, 22, 80], far: [215, 14, 66] }, // 푸른빛 도는 눈밭
+};
+
+// 앞에서부터: 내 쪽 잔디, 강물(+ 반짝임), 건너편 둔치. 땅 색은 계절 테마에 따라
 export function drawRiver(
   ctx: CanvasRenderingContext2D,
   view: View,
   light: Light,
   time: number,
-  autumn = false,
+  theme: Theme = 'summer',
 ) {
+  const ground = GROUND[theme];
   const L = view.camX - SPAN;
   const R = view.camX + SPAN;
 
@@ -31,7 +41,7 @@ export function drawRiver(
       [R, 0, FAR_BANK_Z],
       [L, 0, FAR_BANK_Z],
     ],
-    autumn ? shade(light, 38, 18, 26, 1050) : shade(light, 140, 12, 24, 1050),
+    shade(light, ...ground.far, 1050),
   );
 
   // 강물: 멀수록 하늘을 비추고, 가까울수록 짙은 파랑
@@ -73,6 +83,6 @@ export function drawRiver(
       [R, 0, RIVER_Z0],
       [L, 0, RIVER_Z0],
     ],
-    autumn ? shade(light, 44, 38, 29) : shade(light, 130, 25, 24),
+    shade(light, ...ground.near),
   );
 }
