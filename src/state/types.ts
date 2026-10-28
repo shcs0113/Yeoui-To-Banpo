@@ -10,7 +10,7 @@ export type Status = 'idle' | 'running' | 'paused';
 export type Speed = 1 | 10 | 60 | 300;
 
 // 계절 테마
-export type Theme = 'summer' | 'autumn' | 'winter';
+export type Theme = 'spring' | 'summer' | 'autumn' | 'winter';
 
 // 출발 전에 고르는 설정
 export interface Settings {

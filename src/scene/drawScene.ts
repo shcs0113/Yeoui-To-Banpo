@@ -8,6 +8,7 @@ import { drawMountains } from './layers/mountains';
 import { drawPath } from './layers/path';
 import { drawRiver } from './layers/river';
 import { drawFallenLeaves, drawFallingLeaves } from './layers/leaves';
+import { drawFallenPetals, drawFallingPetals } from './layers/petals';
 import { drawSnowfall } from './layers/snow';
 import { drawFireworks, drawFountain } from './layers/shows';
 import { drawSky } from './layers/sky';
@@ -35,6 +36,7 @@ export function drawScene(ctx: CanvasRenderingContext2D, view: View, frame: Fram
   const light = lightAt(skyT);
   const autumn = frame.theme === 'autumn';
   const winter = frame.theme === 'winter';
+  const spring = frame.theme === 'spring';
   ctx.clearRect(0, 0, view.width, view.height);
   drawSky(ctx, view, light, skyT, time);
   drawMountains(ctx, view, light);
@@ -56,15 +58,23 @@ export function drawScene(ctx: CanvasRenderingContext2D, view: View, frame: Fram
     drawFallenLeaves(ctx, view, light, 14.2, 19); // 나무 밑 둔치
     drawFallingLeaves(ctx, view, light, time, 15, Infinity); // 나무보다 뒤
   }
+  if (spring) {
+    drawFallenPetals(ctx, view, light, 14.2, 19, 4); // 나무 밑 둔치 (촘촘하게)
+    drawFallingPetals(ctx, view, light, time, 15, Infinity); // 나무보다 뒤
+  }
   if (winter) drawSnowfall(ctx, view, light, time, 15, Infinity); // 나무보다 뒤 (먼 하늘까지)
   drawTrees(ctx, view, light, frame.theme);
   if (autumn) drawFallingLeaves(ctx, view, light, time, 14, 15); // 나무 앞, 벤치 뒤
+  if (spring) drawFallingPetals(ctx, view, light, time, 14, 15); // 나무 앞, 벤치 뒤
   drawBenches(ctx, view, light); // 휴식 지점 벤치 + 둥근 등 (나무 앞, 자전거길 뒤)
   if (autumn) drawFallenLeaves(ctx, view, light, 1.5, 7.9); // 자전거길 앞 잔디
+  if (spring) drawFallenPetals(ctx, view, light, 1.5, 7.9, 2); // 자전거길 앞 잔디 (드문드문)
   if (winter) drawSnowfall(ctx, view, light, time, frame.bikeZ, 15); // 나무 앞, 자전거 뒤
   drawPath(ctx, view, light);
   if (autumn) drawFallingLeaves(ctx, view, light, time, frame.bikeZ, 14); // 자전거 뒤
+  if (spring) drawFallingPetals(ctx, view, light, time, frame.bikeZ, 14); // 자전거 뒤
   drawBike(ctx, view, light, time, frame.bikeZ, frame.toBanpo);
   if (autumn) drawFallingLeaves(ctx, view, light, time, 0, frame.bikeZ); // 자전거 앞
+  if (spring) drawFallingPetals(ctx, view, light, time, 0, frame.bikeZ); // 자전거 앞
   if (winter) drawSnowfall(ctx, view, light, time, 0, frame.bikeZ); // 자전거 앞
 }

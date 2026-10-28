@@ -14,6 +14,7 @@ const SPAN = 20000; // 좌우로 충분히 넓게
 type HSL = readonly [number, number, number];
 // 계절마다 땅 색 [색상, 채도, 밝기]: 내 쪽 잔디, 건너편 둔치
 const GROUND: Record<Theme, { near: HSL; far: HSL }> = {
+  spring: { near: [130, 25, 24], far: [140, 12, 24] }, // 여름과 같은 잔디
   summer: { near: [130, 25, 24], far: [140, 12, 24] },
   autumn: { near: [44, 38, 29], far: [38, 18, 26] }, // 마른 황갈색
   winter: { near: [212, 22, 80], far: [215, 14, 66] }, // 푸른빛 도는 눈밭
