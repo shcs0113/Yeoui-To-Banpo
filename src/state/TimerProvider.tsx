@@ -6,12 +6,15 @@ import type { Theme } from './types';
 
 const TICK_MS = 200; // 구간이 끝났는지 확인하는 간격
 
+// 계절마다 흩날림 기본값: 여름은 맑은 날(비 없음)로 시작, 나머지는 켜고 시작
+const effectsDefault = (theme: Theme) => theme !== 'summer';
+
 // 앱 전체에 타이머를 하나 두고, 아래 컴포넌트들이 useTimer()로 꺼내 쓴다
 export function TimerProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(timerReducer, undefined, initState);
   const [autoStart, setAutoStart] = useState(true);
   const [theme, setTheme] = useState<Theme>('summer');
-  const [effects, setEffects] = useState(true);
+  const [effects, setEffects] = useState(effectsDefault('summer'));
 
   // TICK이 읽을 최신 autoStart (바뀔 때마다 interval을 다시 만들지 않으려고 ref에)
   const autoStartRef = useRef(autoStart);
@@ -35,7 +38,11 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       autoStart,
       setAutoStart,
       theme,
-      setTheme,
+      // 계절을 바꾸면 흩날림도 그 계절 기본값으로 (바꾼 뒤엔 직접 켜고 끌 수 있다)
+      setTheme: (next) => {
+        setTheme(next);
+        setEffects(effectsDefault(next));
+      },
       effects,
       setEffects,
       start: () => dispatch({ type: 'START', now: Date.now() }),

@@ -62,7 +62,7 @@ export function SettingsModal({ onClose }: Props) {
       </div>
 
       <div className="border-t border-white/14 py-3">
-        <Toggle label="흩날리는 낙엽, 꽃잎, 눈" checked={effects} onChange={setEffects} />
+        <Toggle label="흩날리는 꽃잎, 비, 낙엽, 눈" checked={effects} onChange={setEffects} />
       </div>
 
       {/* 단축키: 키보드가 없는 좁은 화면(폰)에선 숨긴다 */}
