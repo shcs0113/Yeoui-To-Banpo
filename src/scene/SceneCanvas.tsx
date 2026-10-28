@@ -3,6 +3,7 @@ import { drawScene } from './drawScene';
 import { type LabelMode, labelHits } from './layers/bridges';
 import { approach, laneFor } from './lane';
 import { makeView } from './projection';
+import type { Theme } from '../state/types';
 
 // 한 프레임을 그릴 때 필요한 값 (derive 결과가 이 모양을 그대로 갖고 있다)
 export interface SceneInput {
@@ -10,6 +11,7 @@ export interface SceneInput {
   skyT: number;
   toBanpo: boolean;
   labels?: LabelMode; // 기본: 전부
+  theme?: Theme; // 기본: 여름
 }
 
 interface Props {
@@ -56,7 +58,13 @@ export function SceneCanvas({ getScene, onLabelClick }: Props) {
     const frame = (ms: number) => {
       const dt = Math.min(0.1, (ms - lastMs) / 1000); // 탭이 멈췄다 돌아와도 한 번에 크게 튀지 않게
       lastMs = ms;
-      const { cameraX, skyT, toBanpo, labels = 'all' } = latest.current(Date.now());
+      const {
+        cameraX,
+        skyT,
+        toBanpo,
+        labels = 'all',
+        theme = 'summer',
+      } = latest.current(Date.now());
       bikeZ = approach(bikeZ, laneFor(toBanpo), dt);
       drawScene(ctx, makeView(width, height, cameraX), {
         skyT,
@@ -65,6 +73,7 @@ export function SceneCanvas({ getScene, onLabelClick }: Props) {
         bikeZ,
         toBanpo,
         labels,
+        theme,
       });
       frameId = requestAnimationFrame(frame);
     };

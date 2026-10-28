@@ -1,4 +1,5 @@
 import { SlidersHorizontal } from 'lucide-react';
+import { THEME_OPTIONS } from '../constants/theme';
 import { useTimer } from '../state/TimerContext';
 import type { Speed } from '../state/types';
 import { Kbd } from './ui/Kbd';
@@ -22,9 +23,9 @@ interface Props {
   onClose: () => void;
 }
 
-// 설정 창: 자동 출발 + 테스트 배속
+// 설정 창: 자동 출발 + 테스트 배속 + 계절 테마
 export function SettingsModal({ onClose }: Props) {
-  const { state, autoStart, setAutoStart, setSpeed } = useTimer();
+  const { state, autoStart, setAutoStart, setSpeed, theme, setTheme } = useTimer();
   const running = state.status === 'running'; // 달리는 중엔 배속을 못 바꾼다
 
   return (
@@ -52,6 +53,11 @@ export function SettingsModal({ onClose }: Props) {
           onChange={setSpeed}
           disabled={running}
         />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/14 py-3 text-sm">
+        계절 테마
+        <Segmented options={THEME_OPTIONS} value={theme} onChange={setTheme} />
       </div>
 
       {/* 단축키: 키보드가 없는 좁은 화면(폰)에선 숨긴다 */}

@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { Pause, Play, X } from 'lucide-react';
 import { ROUTE, ROUTE_END_X } from '../constants/course';
+import { THEME_OPTIONS } from '../constants/theme';
 import { formatClock } from '../lib/format';
 import {
   jumpTo,
@@ -16,6 +17,7 @@ import { Digits } from './ui/Digits';
 import { GlassPanel } from './ui/GlassPanel';
 import { Kbd } from './ui/Kbd';
 import { PillButton } from './ui/PillButton';
+import { Segmented } from './ui/Segmented';
 import { SimTimeline } from './SimTimeline';
 
 const ICON = { size: 16, strokeWidth: 2.2 };
@@ -30,7 +32,8 @@ interface Props {
 
 // 코스 미리보기: 하단에서 타임라인, 위치, 시간대를 직접 움직여 본다
 export function PreviewPanel({ preview, auto, onChange, onToggleAuto, onClose }: Props) {
-  const { settings } = useTimer().state;
+  const { state, theme, setTheme } = useTimer();
+  const { settings } = state;
   const { focusMs, totalMs } = simSpan(settings);
   const sim = simOf(preview, settings);
   const ms = sim * totalMs; // 타임라인 위치를 가상 시간으로
@@ -106,7 +109,7 @@ export function PreviewPanel({ preview, auto, onChange, onToggleAuto, onClose }:
         </div>
       </div>
 
-      <div className="mt-2.5 flex gap-2">
+      <div className="mt-2.5 flex flex-wrap gap-2">
         <PillButton onClick={onToggleAuto}>
           {auto ? <Pause {...ICON} /> : <Play {...ICON} />}
           {auto ? '멈춤' : '자동 주행'}
@@ -114,6 +117,11 @@ export function PreviewPanel({ preview, auto, onChange, onToggleAuto, onClose }:
         <PillButton onClick={() => onChange(simAt(0, !toBanpo, settings))}>
           {toBanpo ? '→ 반포 방향' : '← 여의나루 방향'}
         </PillButton>
+        {/* 계절 테마: 버튼 줄 오른쪽 끝 */}
+        <div className="ml-auto flex shrink-0 items-center gap-2 text-[13px]">
+          <span className="text-white/65">테마</span>
+          <Segmented options={THEME_OPTIONS} value={theme} onChange={setTheme} />
+        </div>
       </div>
       {/* 단축키 안내: 키보드가 없는 좁은 화면(폰)에선 숨긴다 */}
       <p className="mt-2.5 text-[11.5px] leading-[1.9] text-white/60 max-[560px]:hidden">

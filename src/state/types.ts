@@ -9,6 +9,9 @@ export type Status = 'idle' | 'running' | 'paused';
 // 테스트 배속
 export type Speed = 1 | 10 | 60 | 300;
 
+// 계절 테마
+export type Theme = 'summer' | 'autumn';
+
 // 출발 전에 고르는 설정
 export interface Settings {
   focusMin: number; // 30 - 60

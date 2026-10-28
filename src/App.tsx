@@ -171,8 +171,8 @@ function RidingScreen() {
           // 미리보기는 매 프레임 그 시각의 화면으로 (자동 주행이 부드럽게 움직이도록)
           const p = pv.at(t);
           return p
-            ? { cameraX: p.x, toBanpo: p.toBanpo, skyT: p.skyT, labels }
-            : { ...derive(state, t), labels };
+            ? { cameraX: p.x, toBanpo: p.toBanpo, skyT: p.skyT, labels, theme: timer.theme }
+            : { ...derive(state, t), labels, theme: timer.theme };
         }}
       />
 

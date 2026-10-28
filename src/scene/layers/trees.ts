@@ -1,17 +1,23 @@
 import { type Light, shade } from '../lighting';
 import { type View, inView, project } from '../projection';
-import { makeRandom } from '../random';
+import { hash01, makeRandom } from '../random';
+import { MAPLE_HUES } from './leaves';
 
 interface Tree {
   x: number;
   z: number; // 자전거길 뒤 둔치 (16.5 ~ 18.5)
   h: number; // 높이 (m)
   hue: number;
+  maple: boolean; // 가을에 단풍나무로 그릴 나무 (나머지는 가을에도 상록수)
+  mapleHue: number; // 단풍 색
 }
+
+const EVERGREEN_SHARE = 0.35; // 가을에도 초록으로 남는 상록수 비율
 
 // 둔치의 상록수(침엽수). 작게, 듬성듬성
 const TREES: readonly Tree[] = (() => {
   const rnd = makeRandom(23);
+  const kind = makeRandom(77); // 나무 종류는 따로 뽑는다 (rnd를 더 부르면 나무 위치가 전부 바뀐다)
   const list: Tree[] = [];
   for (let x = -800; x < 7600; x += 13 + rnd() * 16) {
     list.push({
@@ -19,15 +25,18 @@ const TREES: readonly Tree[] = (() => {
       z: 16.5 + rnd() * 2,
       h: 2.2 + rnd() * 1.1,
       hue: 95 + rnd() * 40,
+      maple: kind() >= EVERGREEN_SHARE,
+      mapleHue: MAPLE_HUES[Math.floor(hash01(Math.round(x * 10)) * MAPLE_HUES.length)],
     });
   }
   return list.sort((a, b) => b.z - a.z); // 먼 나무부터
 })();
 
-export function drawTrees(ctx: CanvasRenderingContext2D, view: View, light: Light) {
+export function drawTrees(ctx: CanvasRenderingContext2D, view: View, light: Light, autumn = false) {
   for (const t of TREES) {
     if (!inView(view, t.x, t.z, 4)) continue;
-    drawTree(ctx, view, light, t);
+    if (autumn && t.maple) drawMaple(ctx, view, light, t);
+    else drawTree(ctx, view, light, t);
   }
 }
 
@@ -68,4 +77,47 @@ function drawTree(ctx: CanvasRenderingContext2D, view: View, light: Light, t: Tr
     ctx.closePath();
     ctx.fill();
   }
+}
+
+// 단풍나무: 둥근 수관을 가로 띠 3개로 (위 밝게 -> 아래 어둡게)
+function drawMaple(ctx: CanvasRenderingContext2D, view: View, light: Light, t: Tree) {
+  const k = view.focal / t.z;
+  const [bx, by] = project(view, [t.x, 0, t.z]);
+  const H = t.h * 1.05 * k;
+  const hue = t.mapleHue;
+
+  // 그림자
+  ctx.fillStyle = 'rgba(0,0,0,.18)';
+  ctx.beginPath();
+  ctx.ellipse(bx, by, H * 0.34, H * 0.05, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 줄기
+  ctx.fillStyle = shade(light, 22, 30, 20);
+  ctx.beginPath();
+  ctx.moveTo(bx - 0.08 * k, by);
+  ctx.lineTo(bx + 0.08 * k, by);
+  ctx.lineTo(bx + 0.04 * k, by - H * 0.5);
+  ctx.lineTo(bx - 0.04 * k, by - H * 0.5);
+  ctx.closePath();
+  ctx.fill();
+
+  // 수관: 타원 안쪽만 칠하도록 잘라 두고(clip), 위에서부터 띠를 겹쳐 칠한다
+  const cy = by - H * 0.68;
+  const rx = H * 0.28;
+  const ry = H * 0.3;
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(bx, cy, rx, ry, 0, 0, Math.PI * 2);
+  ctx.clip();
+  const lightness = [54, 45, 36];
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = shade(light, hue + (2 - i) * 3, 80 - i * 4, lightness[i]);
+    const y0 = cy - ry + (i * 2 * ry) / 3; // 이 띠가 시작하는 높이
+    ctx.beginPath();
+    ctx.ellipse(bx, y0 + ry, rx * 1.6, ry, 0, Math.PI, Math.PI * 2); // 띠 윗선을 살짝 둥글게
+    ctx.rect(bx - rx, y0 + ry, rx * 2, ry * 2); // 그 아래는 전부 채운다 (다음 띠가 덮는다)
+    ctx.fill();
+  }
+  ctx.restore();
 }
