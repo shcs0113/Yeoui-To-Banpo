@@ -22,6 +22,7 @@ import { useTimer } from './state/TimerContext';
 import { TimerProvider } from './state/TimerProvider';
 
 type Panel = 'history' | 'settings' | 'photos' | null;
+const DESKTOP = '(min-width: 901px)'; // 계절 버튼 줄(max-[900px]:hidden)과 같은 기준
 
 export default function App() {
   return (
@@ -147,6 +148,16 @@ function RidingScreen() {
     },
   });
 
+  // 다리 이름표를 눌렀을 때. 미리보기 중에는 넓은 화면(데스크톱)에서만 연다
+  // (폰에선 이름표가 작아서 슬라이더를 만지다 잘못 눌리기 쉽다)
+  const openPhoto = (name: string) => {
+    if (!PHOTOS[name]) return;
+    if (previewing && !window.matchMedia(DESKTOP).matches) return;
+    if (pv.auto) pv.toggleAuto(); // 자동 주행 중이면 멈춘다 (사진 보는 동안 장면이 지나가지 않게)
+    setPhotoName(name);
+    setPanel('photos');
+  };
+
   // 화면이 보여줄 위치, 방향: 미리보기 중이면 미리보기 값, 아니면 타이머 값
   const view = preview
     ? { cameraX: preview.x, toBanpo: preview.toBanpo }
@@ -158,16 +169,8 @@ function RidingScreen() {
     <div className="relative h-dvh w-full overflow-hidden bg-slate-900">
       {/* 캔버스는 매 프레임 이 함수를 불러 지금 위치, 하늘을 받아 간다 */}
       <SceneCanvas
-        // 이스터에그: 집중, 휴식 중에 사진 있는 다리 이름표를 누르면 사진 창
-        onLabelClick={
-          isSetup || previewing
-            ? undefined
-            : (name) => {
-                if (!PHOTOS[name]) return;
-                setPhotoName(name);
-                setPanel('photos');
-              }
-        }
+        // 이스터에그: 사진 있는 다리 이름표를 누르면 사진 창 (첫 화면, 설정 카드에선 꺼 둔다)
+        onLabelClick={isSetup && !previewing ? undefined : openPhoto}
         getScene={(t) => {
           // 미리보기는 매 프레임 그 시각의 화면으로 (자동 주행이 부드럽게 움직이도록)
           const p = pv.at(t);
