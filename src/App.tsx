@@ -6,6 +6,7 @@ import { PreviewPanel } from './components/PreviewPanel';
 import { RestHud } from './components/RestHud';
 import { RouteBar } from './components/RouteBar';
 import { RouteInfo } from './components/RouteInfo';
+import { SeasonDock } from './components/SeasonDock';
 import { SettingsModal } from './components/SettingsModal';
 import { PhotoModal } from './components/PhotoModal';
 import { PHOTOS } from './constants/photos';
@@ -171,8 +172,15 @@ function RidingScreen() {
           // 미리보기는 매 프레임 그 시각의 화면으로 (자동 주행이 부드럽게 움직이도록)
           const p = pv.at(t);
           return p
-            ? { cameraX: p.x, toBanpo: p.toBanpo, skyT: p.skyT, labels, theme: timer.theme }
-            : { ...derive(state, t), labels, theme: timer.theme };
+            ? {
+                cameraX: p.x,
+                toBanpo: p.toBanpo,
+                skyT: p.skyT,
+                labels,
+                theme: timer.theme,
+                effects: timer.effects,
+              }
+            : { ...derive(state, t), labels, theme: timer.theme, effects: timer.effects };
         }}
       />
 
@@ -204,6 +212,9 @@ function RidingScreen() {
       )}
 
       {showRoute && <RouteBar cameraX={view.cameraX} toBanpo={view.toBanpo} />}
+
+      {/* 계절 바로 바꾸기: 집중, 휴식 중에만 (첫 화면, 미리보기, 완주엔 없음) */}
+      {!isSetup && !previewing && !done && !uiHidden && <SeasonDock />}
 
       {/* 미리보기 중엔 타이머 화면(설정 카드, 시계, 독, 완주 카드)을 모두 내린다 */}
       {previewing ? (

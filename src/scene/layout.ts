@@ -19,3 +19,10 @@ export function restCenterY(screenHeight: number, clockHeight: number, topLimit:
   const horizon = makeView(1, screenHeight, 0).horizon;
   return Math.max(horizon - clockHeight / 2 - 14, topLimit + 12 + clockHeight / 2);
 }
+
+// 계절 버튼 줄의 위쪽 y: 하늘(화면 맨 위 ~ 수평선) 가운데에 오게.
+// 단 화면이 낮으면 위쪽 메뉴와 붙지 않게 minTop보다 위로는 올라가지 않는다
+export function seasonDockTop(screenHeight: number, dockHeight: number, minTop: number): number {
+  const horizon = makeView(1, screenHeight, 0).horizon;
+  return Math.max(minTop, horizon / 2 - dockHeight / 2);
+}

@@ -11,6 +11,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(timerReducer, undefined, initState);
   const [autoStart, setAutoStart] = useState(true);
   const [theme, setTheme] = useState<Theme>('summer');
+  const [effects, setEffects] = useState(true);
 
   // TICK이 읽을 최신 autoStart (바뀔 때마다 interval을 다시 만들지 않으려고 ref에)
   const autoStartRef = useRef(autoStart);
@@ -35,6 +36,8 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       setAutoStart,
       theme,
       setTheme,
+      effects,
+      setEffects,
       start: () => dispatch({ type: 'START', now: Date.now() }),
       pause: () => dispatch({ type: 'PAUSE', now: Date.now() }),
       resume: () => dispatch({ type: 'RESUME', now: Date.now() }),
@@ -47,7 +50,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       updateSettings: (patch) => dispatch({ type: 'UPDATE_SETTINGS', patch }),
       setSpeed: (speed) => dispatch({ type: 'SET_SPEED', speed }),
     }),
-    [state, autoStart, theme],
+    [state, autoStart, theme, effects],
   );
 
   return <TimerContext value={api}>{children}</TimerContext>;

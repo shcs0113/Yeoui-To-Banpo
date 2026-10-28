@@ -23,9 +23,10 @@ interface Props {
   onClose: () => void;
 }
 
-// 설정 창: 자동 출발 + 테스트 배속 + 계절 테마
+// 설정 창: 자동 출발 + 테스트 배속 + 계절 테마 + 흩날림
 export function SettingsModal({ onClose }: Props) {
-  const { state, autoStart, setAutoStart, setSpeed, theme, setTheme } = useTimer();
+  const { state, autoStart, setAutoStart, setSpeed, theme, setTheme, effects, setEffects } =
+    useTimer();
   const running = state.status === 'running'; // 달리는 중엔 배속을 못 바꾼다
 
   return (
@@ -58,6 +59,10 @@ export function SettingsModal({ onClose }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/14 py-3 text-sm">
         계절 테마
         <Segmented options={THEME_OPTIONS} value={theme} onChange={setTheme} />
+      </div>
+
+      <div className="border-t border-white/14 py-3">
+        <Toggle label="흩날리는 낙엽, 꽃잎, 눈" checked={effects} onChange={setEffects} />
       </div>
 
       {/* 단축키: 키보드가 없는 좁은 화면(폰)에선 숨긴다 */}

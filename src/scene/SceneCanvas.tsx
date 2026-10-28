@@ -12,6 +12,7 @@ export interface SceneInput {
   toBanpo: boolean;
   labels?: LabelMode; // 기본: 전부
   theme?: Theme; // 기본: 여름
+  effects?: boolean; // 떨어지는 낙엽, 꽃잎, 눈 (기본: 켜짐)
 }
 
 interface Props {
@@ -64,6 +65,7 @@ export function SceneCanvas({ getScene, onLabelClick }: Props) {
         toBanpo,
         labels = 'all',
         theme = 'summer',
+        effects = true,
       } = latest.current(Date.now());
       bikeZ = approach(bikeZ, laneFor(toBanpo), dt);
       drawScene(ctx, makeView(width, height, cameraX), {
@@ -74,6 +76,7 @@ export function SceneCanvas({ getScene, onLabelClick }: Props) {
         toBanpo,
         labels,
         theme,
+        effects,
       });
       frameId = requestAnimationFrame(frame);
     };

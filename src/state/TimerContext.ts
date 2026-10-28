@@ -8,6 +8,8 @@ export interface TimerApi {
   setAutoStart: (on: boolean) => void;
   theme: Theme; // 계절 테마 (잔디, 나무, 낙엽)
   setTheme: (theme: Theme) => void;
+  effects: boolean; // 떨어지는 낙엽, 꽃잎, 눈
+  setEffects: (on: boolean) => void;
   start: () => void;
   pause: () => void;
   resume: () => void;
