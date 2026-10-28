@@ -1,26 +1,13 @@
 import { useId } from 'react';
-import { Pause, Play, X } from 'lucide-react';
-import { ROUTE, ROUTE_END_X } from '../constants/course';
-import { THEME_OPTIONS } from '../constants/theme';
+import { ArrowLeftRight, Pause, Play, X } from 'lucide-react';
+import { ROUTE_END_X } from '../constants/course';
 import { formatClock } from '../lib/format';
-import {
-  jumpTo,
-  previewKm,
-  simAt,
-  simOf,
-  simSpan,
-  skyWord,
-  type PreviewState,
-} from '../lib/preview';
+import { previewKm, simAt, simOf, simSpan, skyWord, type PreviewState } from '../lib/preview';
 import { useTimer } from '../state/TimerContext';
 import { Digits } from './ui/Digits';
-import { GlassPanel } from './ui/GlassPanel';
-import { Kbd } from './ui/Kbd';
 import { PillButton } from './ui/PillButton';
-import { Segmented } from './ui/Segmented';
+import { SeasonButtons } from './SeasonButtons';
 import { SimTimeline } from './SimTimeline';
-
-const ICON = { size: 16, strokeWidth: 2.2 };
 
 interface Props {
   preview: PreviewState;
@@ -30,30 +17,29 @@ interface Props {
   onClose: () => void;
 }
 
-// 코스 미리보기: 하단에서 타임라인, 위치, 시간대를 직접 움직여 본다
+// 코스 미리보기: 카드 없이 화면 아래 그라데이션 위에 한 줄 조작 + 타임라인 + 위치, 시간대
 export function PreviewPanel({ preview, auto, onChange, onToggleAuto, onClose }: Props) {
-  const { state, theme, setTheme } = useTimer();
-  const { settings } = state;
+  const { settings } = useTimer().state;
   const { focusMs, totalMs } = simSpan(settings);
   const sim = simOf(preview, settings);
   const ms = sim * totalMs; // 타임라인 위치를 가상 시간으로
   const { toBanpo } = preview;
 
   return (
-    <GlassPanel className="absolute inset-x-4 bottom-[max(16px,env(safe-area-inset-bottom))] mx-auto max-w-[720px] px-[18px] pt-4 pb-3.5">
-      <button
-        type="button"
-        aria-label="미리보기 닫기"
-        onClick={onClose}
-        className="absolute top-2.5 right-2.5 grid size-[34px] cursor-pointer place-items-center rounded-full hover:bg-white/16"
-      >
-        <X size={20} strokeWidth={1.8} />
-      </button>
-
-      {/* 위: 타임라인 */}
-      <div className="mb-1.5 border-b border-white/15 pb-2.5">
-        <div className="flex items-baseline justify-between gap-2.5 pr-10 text-[13px]">
-          <b className="text-lg tabular-nums">
+    // 아래로 갈수록 진해지는 그라데이션. 글자, 버튼은 그림자로 밝은 하늘 위에서도 읽히게
+    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[rgba(5,10,25,.7)] via-[rgba(5,10,25,.35)] to-transparent px-4 pt-16 pb-[max(16px,env(safe-area-inset-bottom))] [text-shadow:0_1px_6px_rgba(0,0,0,.7)]">
+      <div className="mx-auto max-w-[760px]">
+        {/* 윗줄: 재생, 시간, 거리 / 방향, 계절, 닫기 (좁은 화면에선 오른쪽 묶음이 둘째 줄로) */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <button
+            type="button"
+            aria-label={auto ? '자동 주행 멈춤' : '자동 주행'}
+            onClick={onToggleAuto}
+            className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-full bg-white text-ink drop-shadow-[0_1px_6px_rgba(0,0,0,.45)]"
+          >
+            {auto ? <Pause size={18} strokeWidth={2.4} /> : <Play size={18} strokeWidth={2.4} />}
+          </button>
+          <b className="text-[15px] whitespace-nowrap tabular-nums">
             <Digits
               value={
                 ms <= focusMs
@@ -62,73 +48,58 @@ export function PreviewPanel({ preview, auto, onChange, onToggleAuto, onClose }:
               }
             />
           </b>
-          <span className="text-white/65">
+          <span className="text-[12.5px] whitespace-nowrap text-white/65">
             <Digits value={previewKm(preview).toFixed(2)} />
             km · {skyWord(preview.skyT)}
             {preview.sim === null && ' (자유 조작)'}
           </span>
+          <div className="ml-auto flex items-center gap-2 max-[560px]:w-full max-[560px]:justify-between">
+            <PillButton size="sm" onClick={() => onChange(simAt(0, !toBanpo, settings))}>
+              <ArrowLeftRight size={14} strokeWidth={2.2} />
+              {toBanpo ? '반포 방향' : '여의나루 방향'}
+            </PillButton>
+            <div className="flex gap-1">
+              <SeasonButtons />
+            </div>
+            <button
+              type="button"
+              aria-label="미리보기 닫기"
+              onClick={onClose}
+              className="grid size-[34px] cursor-pointer place-items-center rounded-full drop-shadow-[0_1px_6px_rgba(0,0,0,.45)] hover:bg-white/16"
+            >
+              <X size={20} strokeWidth={1.8} />
+            </button>
+          </div>
         </div>
+
         <SimTimeline
           sim={sim}
           toBanpo={toBanpo}
           settings={settings}
           onChange={(s) => onChange(simAt(s, toBanpo, settings))}
         />
-      </div>
 
-      {/* 아래: 자유 조작 (타임라인과 따로 움직인다) */}
-      <SliderRow
-        label="위치"
-        min={-300}
-        max={ROUTE_END_X + 150}
-        step={1}
-        value={preview.x}
-        onChange={(x) => onChange({ ...preview, x, sim: null })}
-      />
-      <SliderRow
-        label="시간대"
-        min={0}
-        max={1}
-        step={0.001}
-        value={preview.skyT}
-        onChange={(skyT) => onChange({ ...preview, skyT, sim: null })}
-      />
-
-      <div className="my-1 flex items-center gap-2.5 text-[13px]">
-        <span className="w-11 shrink-0 text-white/65">이동</span>
-        <div className="flex flex-wrap gap-[5px]">
-          {ROUTE.map((p, i) => (
-            <PillButton
-              key={p.name}
-              size="sm"
-              onClick={() => onChange(jumpTo(p.x, toBanpo, settings))}
-            >
-              {i + 1} {p.name}
-            </PillButton>
-          ))}
+        {/* 자유 조작 (타임라인과 따로 움직인다) */}
+        <div className="mt-1 space-y-1">
+          <SliderRow
+            label="위치"
+            min={-300}
+            max={ROUTE_END_X + 150}
+            step={1}
+            value={preview.x}
+            onChange={(x) => onChange({ ...preview, x, sim: null })}
+          />
+          <SliderRow
+            label="시간대"
+            min={0}
+            max={1}
+            step={0.001}
+            value={preview.skyT}
+            onChange={(skyT) => onChange({ ...preview, skyT, sim: null })}
+          />
         </div>
       </div>
-
-      <div className="mt-2.5 flex flex-wrap gap-2">
-        <PillButton onClick={onToggleAuto}>
-          {auto ? <Pause {...ICON} /> : <Play {...ICON} />}
-          {auto ? '멈춤' : '자동 주행'}
-        </PillButton>
-        <PillButton onClick={() => onChange(simAt(0, !toBanpo, settings))}>
-          {toBanpo ? '→ 반포 방향' : '← 여의나루 방향'}
-        </PillButton>
-        {/* 계절 테마: 버튼 줄 오른쪽 끝 */}
-        <div className="ml-auto flex shrink-0 items-center gap-2 text-[13px]">
-          <span className="text-white/65">테마</span>
-          <Segmented options={THEME_OPTIONS} value={theme} onChange={setTheme} />
-        </div>
-      </div>
-      {/* 단축키 안내: 키보드가 없는 좁은 화면(폰)에선 숨긴다 */}
-      <p className="mt-2.5 text-[11.5px] leading-[1.9] text-white/60 max-[560px]:hidden">
-        <Kbd>←</Kbd> <Kbd>→</Kbd> 타임라인 이동 · <Kbd>Shift</Kbd> 빠르게 · <Kbd>1</Kbd>~
-        <Kbd>{ROUTE.length}</Kbd> 지점 이동 · <Kbd>Space</Kbd> 자동 주행 · <Kbd>Esc</Kbd> 닫기
-      </p>
-    </GlassPanel>
+    </div>
   );
 }
 
@@ -145,7 +116,7 @@ interface SliderRowProps {
 function SliderRow({ label, min, max, step, value, onChange }: SliderRowProps) {
   const id = useId();
   return (
-    <div className="my-1 flex items-center gap-2.5 text-[13px]">
+    <div className="flex items-center gap-2.5 text-[13px]">
       <label htmlFor={id} className="w-11 shrink-0 text-white/65">
         {label}
       </label>
