@@ -57,3 +57,30 @@ export function RoundButton({ label, on, onClick, children }: RoundButtonProps) 
     </button>
   );
 }
+
+interface DockToggleProps {
+  label: string;
+  open: boolean; // 펼쳤으면 흰 동그라미
+  onClick: () => void;
+  children: ReactNode; // 아이콘 (펼쳤을 땐 X)
+}
+
+// 접었다 펼치는 버튼 (폰 계절, 하늘). 접혔을 땐 반투명 동그라미라 펼친 목록의 버튼과 구분된다
+export function DockToggle({ label, open, onClick, children }: DockToggleProps) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-expanded={open}
+      onClick={onClick}
+      className={cx(
+        'grid size-8 cursor-pointer place-items-center rounded-full transition-colors',
+        open
+          ? 'bg-white text-ink shadow-[0_1px_6px_rgba(0,0,0,.45)]'
+          : 'bg-white/20 text-white shadow-[0_1px_6px_rgba(0,0,0,.3)] [&_svg]:drop-shadow-[0_1px_4px_rgba(0,0,0,.6)]',
+      )}
+    >
+      {children}
+    </button>
+  );
+}
