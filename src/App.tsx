@@ -22,7 +22,7 @@ import { useTimer } from './state/TimerContext';
 import { TimerProvider } from './state/TimerProvider';
 
 type Panel = 'history' | 'settings' | 'photos' | null;
-const DESKTOP = '(min-width: 901px)'; // 계절 버튼 줄(max-[900px]:hidden)과 같은 기준
+const DESKTOP = '(min-width: 900px)'; // 계절 버튼 줄(max-[900px]:hidden = 900 미만에서 숨김)과 같은 기준
 
 export default function App() {
   return (
