@@ -1,6 +1,9 @@
 import { Clock, X } from 'lucide-react';
 import { SKY_CHOICES } from '../constants/sky';
+import { useNow } from '../hooks/useNow';
 import { cx } from '../lib/cx';
+import { formatTimeOfDay } from '../lib/plan';
+import { SKY_LABELS } from '../lib/sky';
 import { useTimer } from '../state/TimerContext';
 import { DockToggle } from './SeasonButtons';
 
@@ -18,9 +21,17 @@ export function SkyMenu({ open, onToggle }: Props) {
 
   return (
     <div className="absolute top-0 right-[46px] flex flex-col items-end gap-1.5">
-      <DockToggle label={open ? '하늘 목록 닫기' : '하늘 바꾸기'} open={open} onClick={onToggle}>
-        {open ? <X {...ICON} /> : <Clock {...ICON} />}
-      </DockToggle>
+      <div className="flex items-center gap-1.5">
+        {/* 글꼴마다 위아래 여백이 달라(맥 한글 글꼴은 글자가 위로 뜬다) 글자 윗선 ~ 밑선만 남기고 잘라 가운데 맞춤 */}
+        {!open && skyMode !== 'flow' && (
+          <span className="text-[12.5px] leading-none font-bold whitespace-nowrap text-white tabular-nums [text-box:trim-both_cap_alphabetic] [text-shadow:0_1px_6px_rgba(0,0,0,.55)]">
+            {skyMode === 'real' ? <ClockTime /> : SKY_LABELS[skyPreset]}
+          </span>
+        )}
+        <DockToggle label={open ? '하늘 목록 닫기' : '하늘 바꾸기'} open={open} onClick={onToggle}>
+          {open ? <X {...ICON} /> : <Clock {...ICON} />}
+        </DockToggle>
+      </div>
 
       {open &&
         SKY_CHOICES.map((c) => {
@@ -35,16 +46,23 @@ export function SkyMenu({ open, onToggle }: Props) {
                 if (c.preset) setSkyPreset(c.preset);
               }}
               className={cx(
-                'cursor-pointer rounded-full px-3 py-[5px] text-[12.5px] font-bold whitespace-nowrap transition-colors',
+                'flex h-7 cursor-pointer items-center rounded-full px-3 text-[12.5px] font-bold whitespace-nowrap transition-colors',
                 on
                   ? 'bg-white text-ink shadow-[0_1px_6px_rgba(0,0,0,.45)]'
                   : 'text-white [text-shadow:0_1px_6px_rgba(0,0,0,.55)] hover:bg-white/15',
               )}
             >
-              {c.label}
+              {/* 위 글자와 같은 이유로 글자 윗선 ~ 밑선만 남겨 알약 가운데에 (높이는 h-7로 고정) */}
+              <span className="leading-none [text-box:trim-both_cap_alphabetic]">{c.label}</span>
             </button>
           );
         })}
     </div>
   );
+}
+
+// 실제 시간일 때 지금 시각 (분 단위라 30초마다 갱신이면 충분하다)
+function ClockTime() {
+  const now = useNow(30_000);
+  return formatTimeOfDay(now);
 }
