@@ -36,6 +36,8 @@ interface RoundButtonProps {
 }
 
 // 작은 동그란 아이콘 버튼. 배경이 없으니 그림자로 하늘 위에서도 보이게
+// 사파리: 버튼 전체에 filter(drop-shadow)를 걸고 transition으로 바꾸면 네모난 잔상이 남는다
+// -> 그림자는 아이콘(svg)에만, 흰 동그라미는 box-shadow로, 바뀌는 건 색만(transition-colors)
 export function RoundButton({ label, on, onClick, children }: RoundButtonProps) {
   return (
     <button
@@ -45,8 +47,10 @@ export function RoundButton({ label, on, onClick, children }: RoundButtonProps) 
       title={label}
       onClick={onClick}
       className={cx(
-        'grid size-8 cursor-pointer place-items-center rounded-full drop-shadow-[0_1px_6px_rgba(0,0,0,.6)] transition',
-        on ? 'bg-white text-ink' : 'text-white hover:bg-white/15',
+        'grid size-8 cursor-pointer place-items-center rounded-full transition-colors',
+        on
+          ? 'bg-white text-ink shadow-[0_1px_6px_rgba(0,0,0,.45)]'
+          : 'text-white hover:bg-white/15 [&_svg]:drop-shadow-[0_1px_4px_rgba(0,0,0,.6)]',
       )}
     >
       {children}

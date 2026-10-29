@@ -66,8 +66,10 @@ function PhoneDock() {
         aria-expanded={open}
         onClick={() => setOpen(!open)}
         className={cx(
-          'grid size-8 cursor-pointer place-items-center rounded-full drop-shadow-[0_1px_6px_rgba(0,0,0,.6)] transition',
-          open ? 'bg-white text-ink' : 'bg-white/20 text-white backdrop-blur-sm',
+          'grid size-8 cursor-pointer place-items-center rounded-full transition-colors',
+          open
+            ? 'bg-white text-ink shadow-[0_1px_6px_rgba(0,0,0,.45)]'
+            : 'bg-white/20 text-white shadow-[0_1px_6px_rgba(0,0,0,.3)] [&_svg]:drop-shadow-[0_1px_4px_rgba(0,0,0,.6)]',
         )}
       >
         {open ? <X {...ICON} /> : <Current {...ICON} />}
