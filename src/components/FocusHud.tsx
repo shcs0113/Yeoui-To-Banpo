@@ -1,9 +1,10 @@
 import { Pause, Play, SkipForward } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useElementHeight } from '../hooks/useElementHeight';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useWindowHeight } from '../hooks/useWindowHeight';
 import { cx } from '../lib/cx';
-import { dockCenterY } from '../scene/layout';
+import { dockCenterY, phoneDockFit } from '../scene/layout';
 import { useTimer } from '../state/TimerContext';
 import { RideClock } from './RideClock';
 import { PillButton } from './ui/PillButton';
@@ -15,6 +16,7 @@ interface Props {
 }
 
 const ARM_MS = 3000; // 포기 버튼을 한 번 누르고 3초 안에 다시 눌러야 포기
+const PHONE = '(max-width: 559.98px)'; // 독이 세로로 쌓이는 기준(max-[560px] = 560 미만)과 같게
 
 // 하단 독: 왼쪽에 시계(집중 중), 오른쪽에 지금 할 수 있는 버튼. 잔디 띠 가운데에 놓는다
 export function FocusHud({ toBanpo, remainingMs, onStart }: Props) {
@@ -22,16 +24,19 @@ export function FocusHud({ toBanpo, remainingMs, onStart }: Props) {
   const resting = state.phase !== 'focus'; // 휴식·타임랩스엔 시계가 화면 가운데로 간다 (RestHud)
 
   const screenH = useWindowHeight();
-  const [ref, dockH] = useElementHeight<HTMLDivElement>();
+  const [ref, dockH] = useElementHeight<HTMLDivElement>(); // 줄이기 전 높이 (scale은 offsetHeight에 안 들어간다)
+  const phone = useMediaQuery(PHONE);
+  const fit = phoneDockFit(screenH, dockH);
 
   return (
     <div
       ref={ref}
       className={cx(
-        'absolute left-1/2 flex w-[min(760px,calc(100vw-48px))] -translate-x-1/2 -translate-y-1/2 items-end justify-between gap-[18px] max-[560px]:flex-col max-[560px]:items-center',
+        'absolute left-1/2 flex w-[min(760px,calc(100vw-48px))] -translate-x-1/2 -translate-y-1/2 items-end justify-between gap-[18px] max-[560px]:flex-col max-[560px]:items-center max-[560px]:gap-2.5',
         resting && 'justify-center',
       )}
-      style={{ top: dockCenterY(screenH, dockH) }}
+      // 폰: 잔디 띠에 맞게 줄여서 띠 안에. 데스크탑은 그대로
+      style={phone ? { top: fit.centerY, scale: fit.scale } : { top: dockCenterY(screenH, dockH) }}
     >
       {!resting && (
         <div className="shrink-0 max-[560px]:text-center">

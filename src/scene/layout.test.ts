@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { dockCenterY, grassTopY, restCenterY } from './layout';
+import { dockCenterY, grassTopY, phoneDockFit, restCenterY } from './layout';
 
 describe('grassTopY', () => {
   it('800px 화면: 수평선(368) 아래 자전거길 앞 가장자리', () => {
@@ -15,6 +15,23 @@ describe('dockCenterY', () => {
 
   it('독이 커서 바닥에 닿으면 바닥에서 16px 위로 올린다', () => {
     expect(dockCenterY(800, 260)).toBe(800 - 16 - 130);
+  });
+});
+
+describe('phoneDockFit', () => {
+  it('잔디 띠가 넉넉하면 줄이지 않는다', () => {
+    // 800px: 잔디 띠 608 ~ 800, 쓸 수 있는 높이 192 - 6 - 22 = 164
+    const fit = phoneDockFit(800, 150);
+    expect(fit.scale).toBe(1);
+    expect(fit.centerY).toBeCloseTo(608 + 6 + 164 / 2); // 696
+  });
+
+  it('독이 띠보다 크면 띠에 맞게 줄인다', () => {
+    expect(phoneDockFit(800, 328).scale).toBeCloseTo(0.5); // 164 / 328
+  });
+
+  it('높이를 아직 못 쟀으면(0) 그대로', () => {
+    expect(phoneDockFit(800, 0).scale).toBe(1);
   });
 });
 

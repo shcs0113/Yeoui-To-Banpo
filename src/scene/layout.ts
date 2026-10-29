@@ -13,6 +13,23 @@ export function dockCenterY(screenHeight: number, dockHeight: number): number {
   return Math.min(grassMid, screenHeight - 16 - dockHeight / 2);
 }
 
+// 폰에서는 시계와 버튼이 세로로 쌓여 독이 높다. 낮은 화면에선 잔디 띠보다 커져 자전거길을 덮으니,
+// 띠 안(위 6px, 아래 22px 띄움)에 들어가게 통째로 줄인다. 넉넉하면 줄이지 않고 띠 가운데에
+const PHONE_TOP_GAP = 6;
+const PHONE_BOTTOM_GAP = 22;
+
+export function phoneDockFit(
+  screenHeight: number,
+  dockHeight: number,
+): { centerY: number; scale: number } {
+  const grassTop = grassTopY(screenHeight);
+  const room = screenHeight - grassTop - PHONE_TOP_GAP - PHONE_BOTTOM_GAP; // 독이 쓸 수 있는 높이
+  return {
+    centerY: grassTop + PHONE_TOP_GAP + room / 2,
+    scale: dockHeight > 0 ? Math.min(1, room / dockHeight) : 1, // 아직 못 쟀으면(0) 그대로
+  };
+}
+
 // 휴식 시계의 가운데 y: 아랫부분이 수평선 바로 위(14px)에 오게.
 // 단 위쪽의 경로 바(topLimit)와는 최소 12px 띄운다
 export function restCenterY(screenHeight: number, clockHeight: number, topLimit: number): number {
