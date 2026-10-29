@@ -9,6 +9,7 @@ const CELL = 1; // 떨어지는 낙엽 하나가 맡는 칸 (m)
 const FALL_H = 5.5; // 떨어지기 시작하는 높이
 const NEAR_Z = 6.5; // 이보다 가까우면 너무 커 보여서 안 그린다
 const FAR_Z = 19; // 강 바로 앞까지
+const WIND = 0.25; // 바람에 밀리는 속도 (m/s)
 
 // 떨어지는 낙엽: 장면에 고정된 칸마다 하나씩, 시간에 따라 떨어지고 흔들리며 돈다
 // zMin ~ zMax 깊이에 있는 것만 (자전거 앞뒤로 나눠 그리려고)
@@ -29,10 +30,13 @@ export function drawFallingLeaves(
     if (z < zMin || z >= zMax) continue;
     const speed = 0.55 + hash01(c * 1.3) * 0.5; // 떨어지는 속도 (m/s)
     const phase = hash01(c * 9.2) * 100;
-    const y = FALL_H - ((time * speed + phase) % (FALL_H + 0.5));
+    const fallen = (time * speed + phase) % (FALL_H + 0.5); // 이번에 떨어진 거리 (바닥에 닿으면 0부터 다시)
+    const y = FALL_H - fallen;
     if (y < 0) continue; // 바닥에 닿은 뒤 잠깐 쉬었다가 다시 위에서
     const sway = Math.sin(time * 1.4 + phase) * 0.7; // 좌우 흔들림
-    const x = c * CELL + sway + time * 0.25; // 바람에 살짝 밀린다
+    // 바람: 떨어지는 동안만 옆으로 밀린다 (time에 곱하면 시간이 갈수록 칸에서 계속 멀어져 화면 밖으로 사라진다)
+    const wind = (fallen / speed) * WIND;
+    const x = c * CELL + sway + wind;
     const [sx, sy] = project(view, [x, y, z]);
     const k = view.focal / z; // 1m가 화면에서 몇 px인지
     const hue = MAPLE_HUES[Math.floor(hash01(c * 5.5) * MAPLE_HUES.length)];

@@ -3,6 +3,7 @@ import { type View, project } from '../projection';
 import { hash01 } from '../random';
 
 const FALL_H = 10; // 떨어지기 시작하는 높이 (m)
+const WIND = 0.15; // 바람에 밀리는 속도 (m/s)
 const DENSITY = 0.03; // 칸 크기 = 깊이 * DENSITY (작을수록 눈이 많다)
 // 깊이 띠: 멀수록 칸을 넓게 잡아서, 화면에서 보이는 눈송이 밀도가 깊이와 상관없이 비슷하게
 const BANDS: readonly (readonly [number, number])[] = [
@@ -36,8 +37,11 @@ export function drawSnowfall(
       if (z < zMin || z >= zMax) continue;
       const speed = 0.6 + hash01(n * 1.3) * 0.5; // 떨어지는 속도 (m/s)
       const phase = hash01(n * 9.2) * 100;
-      const y = FALL_H - ((time * speed + phase) % FALL_H);
-      const x = c * cell + Math.sin(time * 0.9 + phase) * 0.5 + time * 0.15; // 흔들림 + 바람
+      const fallen = (time * speed + phase) % FALL_H; // 이번에 떨어진 거리 (바닥에 닿으면 0부터 다시)
+      const y = FALL_H - fallen;
+      // 바람: 떨어지는 동안만 옆으로 밀린다 (time에 곱하면 시간이 갈수록 칸에서 계속 멀어져 화면 밖으로 사라진다)
+      const wind = (fallen / speed) * WIND;
+      const x = c * cell + Math.sin(time * 0.9 + phase) * 0.5 + wind; // 흔들림 + 바람
       const [sx, sy] = project(view, [x, y, z]);
       const r = Math.max(0.8, (view.focal / z) * 0.035); // 지름 7cm, 멀어도 최소 0.8px
       ctx.beginPath();
