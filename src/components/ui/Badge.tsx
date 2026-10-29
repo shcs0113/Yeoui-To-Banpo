@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { cx } from '../../lib/cx';
+import { TRIM } from '../../lib/trim';
 
 export type Tone = 'focus' | 'rest';
 
@@ -21,11 +22,12 @@ export function Badge({ tone, size = 'sm', children }: Props) {
     <span
       className={cx(
         'inline-flex items-center gap-[7px] font-extrabold tracking-[.08em] [text-shadow:0_1px_8px_rgba(0,0,0,.6)]',
-        size === 'sm' ? 'text-xs' : 'text-sm',
+        // 높이는 예전 줄 높이 그대로 (글자 상자를 잘라내도 아래 시계가 안 움직이게)
+        size === 'sm' ? 'h-4 text-xs' : 'h-5 text-sm',
       )}
     >
       <span aria-hidden className={cx('size-2 rounded-full', DOT[tone])} />
-      {children}
+      <span className={TRIM}>{children}</span>
     </span>
   );
 }

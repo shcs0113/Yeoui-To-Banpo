@@ -4,6 +4,7 @@ import { useNow } from '../hooks/useNow';
 import { cx } from '../lib/cx';
 import { formatTimeOfDay } from '../lib/plan';
 import { SKY_LABELS } from '../lib/sky';
+import { TRIM } from '../lib/trim';
 import { useTimer } from '../state/TimerContext';
 import { DockToggle } from './SeasonButtons';
 
@@ -22,9 +23,13 @@ export function SkyMenu({ open, onToggle }: Props) {
   return (
     <div className="absolute top-0 right-[46px] flex flex-col items-end gap-1.5">
       <div className="flex items-center gap-1.5">
-        {/* 글꼴마다 위아래 여백이 달라(맥 한글 글꼴은 글자가 위로 뜬다) 글자 윗선 ~ 밑선만 남기고 잘라 가운데 맞춤 */}
         {!open && skyMode !== 'flow' && (
-          <span className="text-[12.5px] leading-none font-bold whitespace-nowrap text-white tabular-nums [text-box:trim-both_cap_alphabetic] [text-shadow:0_1px_6px_rgba(0,0,0,.55)]">
+          <span
+            className={cx(
+              TRIM,
+              'text-[12.5px] font-bold whitespace-nowrap text-white tabular-nums [text-shadow:0_1px_6px_rgba(0,0,0,.55)]',
+            )}
+          >
             {skyMode === 'real' ? <ClockTime /> : SKY_LABELS[skyPreset]}
           </span>
         )}
@@ -52,8 +57,7 @@ export function SkyMenu({ open, onToggle }: Props) {
                   : 'text-white [text-shadow:0_1px_6px_rgba(0,0,0,.55)] hover:bg-white/15',
               )}
             >
-              {/* 위 글자와 같은 이유로 글자 윗선 ~ 밑선만 남겨 알약 가운데에 (높이는 h-7로 고정) */}
-              <span className="leading-none [text-box:trim-both_cap_alphabetic]">{c.label}</span>
+              <span className={TRIM}>{c.label}</span>
             </button>
           );
         })}

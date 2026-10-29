@@ -1,4 +1,5 @@
 import { cx } from '../../lib/cx';
+import { TRIM } from '../../lib/trim';
 
 export interface Option<T> {
   value: T;
@@ -31,13 +32,13 @@ export function Segmented<T extends string | number>({
             disabled={disabled}
             onClick={() => onChange(o.value)}
             className={cx(
-              'cursor-pointer rounded-full border-[1.5px] px-3 py-1.5 text-[12.5px] font-bold transition disabled:cursor-default disabled:opacity-40',
+              'flex h-8 cursor-pointer items-center rounded-full border-[1.5px] px-3 text-[12.5px] font-bold transition disabled:cursor-default disabled:opacity-40',
               selected
                 ? 'border-white bg-white text-ink'
                 : 'border-white/55 bg-white/[.04] hover:bg-white/[.14]',
             )}
           >
-            {o.label}
+            <span className={TRIM}>{o.label}</span>
           </button>
         );
       })}

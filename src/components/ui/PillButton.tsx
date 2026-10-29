@@ -1,5 +1,6 @@
-import type { ButtonHTMLAttributes } from 'react';
+import { Children, type ButtonHTMLAttributes } from 'react';
 import { cx } from '../../lib/cx';
+import { TRIM } from '../../lib/trim';
 
 type Variant = 'clear' | 'primary' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
@@ -17,9 +18,10 @@ const VARIANTS: Record<Variant, string> = {
 };
 
 const SIZES: Record<Size, string> = {
-  sm: 'px-3 py-1.5 text-[12.5px]',
-  md: 'px-[22px] py-2.5 text-sm',
-  lg: 'px-7 py-[13px] text-base',
+  // 높이는 고정 (글자 상자를 잘라내도 버튼 크기가 그대로이게)
+  sm: 'h-[34px] px-3 text-[12.5px]',
+  md: 'h-[42px] px-[22px] text-sm',
+  lg: 'h-[52px] px-7 text-base',
 };
 
 // 흰 테두리 알약 버튼. 나머지 속성(onClick, disabled …)은 그대로 <button>에 넘긴다
@@ -28,6 +30,7 @@ export function PillButton({
   size = 'md',
   type = 'button',
   className,
+  children,
   ...rest
 }: Props) {
   return (
@@ -40,6 +43,11 @@ export function PillButton({
         className,
       )}
       {...rest}
-    />
+    >
+      {/* 글자만 span으로 감싸 TRIM (아이콘은 그대로) */}
+      {Children.map(children, (c) =>
+        typeof c === 'string' || typeof c === 'number' ? <span className={TRIM}>{c}</span> : c,
+      )}
+    </button>
   );
 }
