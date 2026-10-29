@@ -12,6 +12,10 @@ export type Speed = 1 | 10 | 60 | 300;
 // 계절 테마
 export type Theme = 'spring' | 'summer' | 'autumn' | 'winter';
 
+// 하늘: 흐름(집중 동안 낮 -> 밤), 고정(고른 하늘 그대로), 실제 시간(지금 시각의 하늘)
+export type SkyMode = 'flow' | 'fixed' | 'real';
+export type SkyPreset = 'day' | 'sunset' | 'night' | 'dawn';
+
 // 출발 전에 고르는 설정
 export interface Settings {
   focusMin: number; // 30 - 60

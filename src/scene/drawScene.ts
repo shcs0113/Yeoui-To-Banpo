@@ -48,8 +48,9 @@ export function drawScene(ctx: CanvasRenderingContext2D, view: View, frame: Fram
 
   // 도착 쇼: 밤에만, 도착지 근처에서만 (가까워질수록 서서히 보인다)
   const show = showLevel(skyT);
-  const nearYeoui = ramp(600 - view.camX, 0, 300);
-  const nearBanpo = ramp(view.camX - (ROUTE_END_X - 600), 0, 300);
+  // 가는 방향의 도착지에서만: 고정 밤처럼 출발할 때부터 밤이어도 출발점에선 안 보인다
+  const nearYeoui = frame.toBanpo ? 0 : ramp(600 - view.camX, 0, 300);
+  const nearBanpo = frame.toBanpo ? ramp(view.camX - (ROUTE_END_X - 600), 0, 300) : 0;
   if (show > 0 && nearYeoui > 0) drawFireworks(ctx, view, time, show * nearYeoui); // 강 건너 하늘
 
   drawRiver(ctx, view, light, time, frame.theme);

@@ -16,6 +16,7 @@ import { TopBar } from './components/TopBar';
 import { useKeyboard } from './hooks/useKeyboard';
 import { useNow } from './hooks/useNow';
 import { usePreview } from './hooks/usePreview';
+import { skyFor } from './lib/sky';
 import { SceneCanvas } from './scene/SceneCanvas';
 import { derive } from './state/derive';
 import { useTimer } from './state/TimerContext';
@@ -174,6 +175,7 @@ function RidingScreen() {
         getScene={(t) => {
           // 미리보기는 매 프레임 그 시각의 화면으로 (자동 주행이 부드럽게 움직이도록)
           const p = pv.at(t);
+          const d = derive(state, t);
           return p
             ? {
                 cameraX: p.x,
@@ -183,7 +185,14 @@ function RidingScreen() {
                 theme: timer.theme,
                 effects: timer.effects,
               }
-            : { ...derive(state, t), labels, theme: timer.theme, effects: timer.effects };
+            : {
+                ...d,
+                // 하늘: 흐름이면 타이머 값 그대로, 고정이면 고른 하늘, 실제 시간이면 지금 시각(매 프레임 읽음)
+                skyT: skyFor(timer.skyMode, timer.skyPreset, d.skyT, t),
+                labels,
+                theme: timer.theme,
+                effects: timer.effects,
+              };
         }}
       />
 

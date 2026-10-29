@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { Settings, Speed, Theme, TimerState } from './types';
+import type { Settings, SkyMode, SkyPreset, Speed, Theme, TimerState } from './types';
 
 // 화면이 타이머를 쓰는 창구: 상태 + 동작 함수들 (현재 시각은 함수가 알아서 넣는다)
 export interface TimerApi {
@@ -10,6 +10,10 @@ export interface TimerApi {
   setTheme: (theme: Theme) => void;
   effects: boolean; // 떨어지는 꽃잎, 비, 낙엽, 눈
   setEffects: (on: boolean) => void;
+  skyMode: SkyMode; // 하늘 흐름, 고정, 실제 시간
+  setSkyMode: (mode: SkyMode) => void;
+  skyPreset: SkyPreset; // 고정일 때 하늘
+  setSkyPreset: (preset: SkyPreset) => void;
   start: () => void;
   pause: () => void;
   resume: () => void;
