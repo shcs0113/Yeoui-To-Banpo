@@ -72,12 +72,9 @@ function PhoneDock() {
         {open ? <X size={20} strokeWidth={2} /> : <Current size={20} strokeWidth={1.9} />}
       </button>
 
-      {/* 펼친 목록: 하나 고르면 다시 접힌다. [&_button]:size-10 으로 버튼을 키운다 */}
+      {/* 펼친 목록: 골라도 그대로, 위 X를 눌러야 접힌다. [&_button]:size-10 으로 버튼을 키운다 */}
       {open && (
-        <div
-          className="flex flex-col items-center gap-1.5 [&_button]:size-10"
-          onClick={() => setOpen(false)}
-        >
+        <div className="flex flex-col items-center gap-1.5 [&_button]:size-10">
           <SeasonButtons />
           <span className="my-0.5 h-px w-6 bg-white/50 shadow-[0_0_4px_rgba(0,0,0,.5)]" />
           <RoundButton
