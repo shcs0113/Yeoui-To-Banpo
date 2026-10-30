@@ -1,4 +1,5 @@
 import { cx } from '../../lib/cx';
+import { TRIM } from '../../lib/trim';
 
 interface Props {
   label: string;
@@ -16,7 +17,7 @@ export function Toggle({ label, checked, onChange }: Props) {
       onClick={() => onChange(!checked)}
       className="flex w-full cursor-pointer items-center justify-between gap-4 text-left text-sm"
     >
-      <span>{label}</span>
+      <span className={TRIM}>{label}</span>
       <span
         aria-hidden
         className={cx(

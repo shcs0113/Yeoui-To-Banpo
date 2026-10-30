@@ -1,16 +1,18 @@
 import { useEffect, useId, type ReactNode } from 'react';
 import { X } from 'lucide-react';
+import { TRIM } from '../../lib/trim';
 import { GlassPanel } from './GlassPanel';
 
 interface Props {
   title: string;
   icon: ReactNode; // 제목 앞 아이콘
   onClose: () => void;
+  clear?: boolean; // 투명 유리 (GlassPanel clear)
   children: ReactNode;
 }
 
 // 팝업 창: 어두운 배경 + 가운데 유리 패널. 배경 클릭, Esc, X 버튼으로 닫힌다
-export function Modal({ title, icon, onClose, children }: Props) {
+export function Modal({ title, icon, onClose, clear = false, children }: Props) {
   const titleId = useId(); // 창 이름을 제목과 연결 (화면 낭독기용)
 
   // Esc로 닫기: 창이 열려 있는 동안만 키보드를 듣는다
@@ -28,6 +30,7 @@ export function Modal({ title, icon, onClose, children }: Props) {
       onClick={onClose} // 바깥(배경)을 누르면 닫힘
     >
       <GlassPanel
+        clear={clear}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -37,7 +40,7 @@ export function Modal({ title, icon, onClose, children }: Props) {
         <header className="mb-4 flex items-center justify-between">
           <h3 id={titleId} className="flex items-center gap-2.5 text-[17px] font-bold">
             {icon}
-            {title}
+            <span className={TRIM}>{title}</span>
           </h3>
           <button
             type="button"

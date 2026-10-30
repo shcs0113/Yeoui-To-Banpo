@@ -8,7 +8,7 @@ export interface Option<T> {
 
 interface Props<T> {
   options: readonly Option<T>[];
-  value: T;
+  value: T | null; // null이면 아무것도 안 고른 상태
   onChange: (value: T) => void;
   disabled?: boolean;
 }

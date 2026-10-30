@@ -1,4 +1,6 @@
 import { Minus, Plus } from 'lucide-react';
+import { cx } from '../../lib/cx';
+import { TRIM } from '../../lib/trim';
 
 interface Props {
   label: string;
@@ -15,7 +17,7 @@ const ROUND =
 export function Stepper({ label, value, min, max, onChange }: Props) {
   return (
     <div className="flex w-full items-center justify-between text-sm">
-      <span className="text-white/70">{label}</span>
+      <span className={cx(TRIM, 'text-white/70')}>{label}</span>
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -26,7 +28,7 @@ export function Stepper({ label, value, min, max, onChange }: Props) {
         >
           <Minus size={18} />
         </button>
-        <b aria-live="polite" className="min-w-7 text-center text-xl tabular-nums">
+        <b aria-live="polite" className={cx(TRIM, 'min-w-7 text-center text-xl tabular-nums')}>
           {value}
         </b>
         <button
