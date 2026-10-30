@@ -3,6 +3,7 @@ import { cx } from '../lib/cx';
 import { formatClock } from '../lib/format';
 import { recordTitle, summarize } from '../lib/history';
 import { formatHoursMinutes, formatTimeOfDay } from '../lib/plan';
+import { TRIM } from '../lib/trim';
 import { useTimer } from '../state/TimerContext';
 import type { HistoryRecord } from '../state/types';
 import { Modal } from './ui/Modal';
@@ -19,19 +20,20 @@ function ResultMark({ record }: { record: HistoryRecord }) {
   return <X size={16} className="text-[#ff8a8a]" aria-label="포기" />;
 }
 
-// 라이딩 기록 창: 위에 요약, 아래에 최근 것부터 한 줄씩
+// 작업 기록 창: 위에 요약, 아래에 최근 것부터 한 줄씩 (설정 창과 같은 투명 유리)
 export function HistoryModal({ onClose }: Props) {
   const { history } = useTimer().state;
   const sum = summarize(history);
 
   return (
     <Modal
-      title="라이딩 기록"
+      title="작업 기록"
       icon={<ClipboardList size={20} strokeWidth={1.8} />}
       onClose={onClose}
+      clear
     >
       <StatList
-        className="mb-4"
+        className="border-t border-white/14 pt-4 pb-4"
         stats={[
           { value: sum.km.toFixed(1), unit: 'km', label: '달린 거리' },
           { value: formatHoursMinutes(sum.focusMin), label: '집중 시간' },
@@ -40,15 +42,14 @@ export function HistoryModal({ onClose }: Props) {
       />
 
       {history.length === 0 ? (
-        <p className="pt-1.5 text-sm text-white/70">아직 기록이 없어요. 출발해 보세요!</p>
+        <p className={cx(TRIM, 'border-t border-white/10 pt-4 text-sm text-white/70')}>
+          아직 기록이 없어요. 출발해 보세요!
+        </p>
       ) : (
-        <ul>
+        <ul className="divide-y divide-white/10 border-t border-white/10">
           {history.map((r) => (
-            <li
-              key={r.id}
-              className="flex items-center gap-2.5 border-t border-white/14 py-2.5 text-sm"
-            >
-              <span className="w-11 text-white/65 tabular-nums">
+            <li key={r.id} className="flex items-center gap-2.5 py-3 text-sm">
+              <span className={cx(TRIM, 'w-11 text-white/65 tabular-nums')}>
                 {formatTimeOfDay(r.startedAt)}
               </span>
               <span className="flex flex-1 items-center gap-2">
@@ -61,9 +62,11 @@ export function HistoryModal({ onClose }: Props) {
                       : 'bg-rest shadow-[0_0_8px_var(--color-rest)]',
                   )}
                 />
-                {recordTitle(r)}
+                <span className={TRIM}>{recordTitle(r)}</span>
               </span>
-              <span className="text-white/70 tabular-nums">{formatClock(r.elapsedMs)}</span>
+              <span className={cx(TRIM, 'text-white/70 tabular-nums')}>
+                {formatClock(r.elapsedMs)}
+              </span>
               <span className="flex w-[22px] justify-end text-white/85">
                 <ResultMark record={r} />
               </span>

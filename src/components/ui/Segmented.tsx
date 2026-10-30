@@ -34,7 +34,7 @@ export function Segmented<T extends string | number>({
             className={cx(
               'flex h-8 cursor-pointer items-center rounded-full border-[1.5px] px-3 text-[12.5px] font-bold transition disabled:cursor-default disabled:opacity-40',
               selected
-                ? 'border-white bg-white text-ink'
+                ? 'border-white bg-white text-ink [text-shadow:none]' // 흰 바탕 위 진한 글자엔 그림자 없이
                 : 'border-white/55 bg-white/[.04] hover:bg-white/[.14]',
             )}
           >

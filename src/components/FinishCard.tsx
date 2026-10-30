@@ -32,7 +32,7 @@ export function FinishCard({ onHistory }: Props) {
       className="absolute inset-x-4 mx-auto max-w-[440px] -translate-y-1/2"
       style={{ top: dockCenterY(screenH, cardH) }}
     >
-      <GlassPanel className="px-6 pt-[22px] pb-5 text-center">
+      <GlassPanel clear className="px-6 pt-[22px] pb-5 text-center">
         <h2 className="mb-3.5 text-2xl font-extrabold [text-shadow:0_2px_14px_rgba(0,0,0,.45)]">
           CYCLE {settings.cycles} 완주
         </h2>

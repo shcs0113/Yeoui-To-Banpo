@@ -9,6 +9,7 @@ import { SkyPicker } from './SkyPicker';
 import { Kbd } from './ui/Kbd';
 import { Modal } from './ui/Modal';
 import { Segmented } from './ui/Segmented';
+import { SettingRow } from './ui/SettingRow';
 import { Toggle } from './ui/Toggle';
 
 const SPEEDS = [1, 10, 60, 300] as const satisfies readonly Speed[];
@@ -71,9 +72,9 @@ export function SettingsModal({ onClose }: Props) {
           칸 높이 = 가장 긴 탭이라 탭을 바꿔도 창 크기가 그대로다 */}
       <div className="grid">
         <TabPanel on={tab === '풍경'}>
-          <Row label="계절">
+          <SettingRow label="계절" className="py-3">
             <Segmented options={THEME_OPTIONS} value={theme} onChange={setTheme} />
-          </Row>
+          </SettingRow>
           <SkyPicker className="py-3" />
           <div className="py-3">
             <Toggle label="흩날리는 꽃잎, 비, 낙엽, 눈" checked={effects} onChange={setEffects} />
@@ -88,14 +89,18 @@ export function SettingsModal({ onClose }: Props) {
               onChange={setAutoStart}
             />
           </div>
-          <Row label="테스트 배속" hint={running ? '일시정지하면 바꿀 수 있어요' : undefined}>
+          <SettingRow
+            label="테스트 배속"
+            hint={running ? '일시정지하면 바꿀 수 있어요' : undefined}
+            className="py-3"
+          >
             <Segmented
               options={SPEED_OPTIONS}
               value={state.speed}
               onChange={setSpeed}
               disabled={running}
             />
-          </Row>
+          </SettingRow>
         </TabPanel>
 
         <TabPanel on={tab === '단축키'} className="max-[560px]:hidden">
@@ -131,21 +136,6 @@ function TabPanel({
       className={cx('divide-y divide-white/10 [grid-area:1/1]', !on && 'invisible', className)}
     >
       {children}
-    </div>
-  );
-}
-
-// 한 줄 설정: 왼쪽 이름(+ 작은 안내), 오른쪽 고르기. 좁아서 줄이 꺾여도 오른쪽 끝에 붙인다
-function Row({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-3 text-sm">
-      <div>
-        <div className={TRIM}>{label}</div>
-        {hint && (
-          <small className={cx(TRIM, 'mt-2 block text-[11.5px] text-white/60')}>{hint}</small>
-        )}
-      </div>
-      <div className="ml-auto">{children}</div>
     </div>
   );
 }
