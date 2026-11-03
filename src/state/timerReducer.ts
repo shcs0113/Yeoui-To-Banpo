@@ -3,6 +3,7 @@ import type { HistoryRecord, Settings, TimerAction, TimerState } from './types';
 const MIN = 60_000;
 
 export const SKIP_LAPSE_MS = 5_000; // 휴식 건너뛰기 타임랩스 길이
+export const HISTORY_LIMIT = 1000; // 작업 기록은 최근 것부터 이만큼만 남긴다
 
 // 설정 하나의 허용 범위와 단위
 interface Limit {
@@ -19,7 +20,7 @@ export const SETTING_LIMITS = {
 } as const satisfies Record<keyof Settings, Limit>;
 
 // 값을 단위에 맞춰 반올림하고 범위 안으로 자른다. 숫자가 아니면 이전 값 유지
-function snap(value: number, limit: Limit, fallback: number): number {
+export function snap(value: number, limit: Limit, fallback: number): number {
   if (!Number.isFinite(value)) return fallback;
   const stepped = Math.round((value - limit.min) / limit.step) * limit.step + limit.min;
   return Math.min(limit.max, Math.max(limit.min, stepped));
@@ -84,7 +85,7 @@ function addRecord(
     elapsedMs: (state.durationMs - state.remainingMs) * state.speed,
     completed,
   };
-  return [record, ...state.history];
+  return [record, ...state.history].slice(0, HISTORY_LIMIT);
 }
 
 export function timerReducer(state: TimerState, action: TimerAction): TimerState {

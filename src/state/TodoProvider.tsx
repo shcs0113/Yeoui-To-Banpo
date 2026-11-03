@@ -1,4 +1,6 @@
-import { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { parseTodos } from '../lib/persist';
+import { KEYS, load, save } from '../lib/storage';
 import { addTodo, leftCount, removeTodo, sortTodos, toggleTodo } from '../lib/todos';
 import { type TodoApi, TodoContext } from './TodoContext';
 import type { Todo } from './types';
@@ -9,7 +11,8 @@ const newId = () => `${Date.now().toString(36)}-${(seq++).toString(36)}`;
 
 // 앱 전체에 할 일 목록을 하나 두고, 첫 화면과 주행 화면이 같이 쓴다
 export function TodoProvider({ children }: { children: ReactNode }) {
-  const [list, setList] = useState<Todo[]>([]);
+  const [list, setList] = useState<Todo[]>(() => parseTodos(load(KEYS.todos))); // 저장해 둔 목록으로 시작
+  useEffect(() => save(KEYS.todos, list), [list]);
 
   const api = useMemo<TodoApi>(
     () => ({
