@@ -34,6 +34,13 @@ export interface HistoryRecord {
   completed: boolean;
 }
 
+// 할 일 한 줄 (체크리스트)
+export interface Todo {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
 // 휴식 건너뛰기 5초 타임랩스 정보
 export interface Lapse {
   fromT: number;

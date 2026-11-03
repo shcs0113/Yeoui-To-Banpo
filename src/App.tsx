@@ -12,6 +12,8 @@ import { PhotoModal } from './components/PhotoModal';
 import { PHOTOS } from './constants/photos';
 import { SetupCard } from './components/SetupCard';
 import { TitleScreen } from './components/TitleScreen';
+import { TodoModal } from './components/TodoModal';
+import { TodoPeek } from './components/TodoPeek';
 import { TopBar } from './components/TopBar';
 import { useKeyboard } from './hooks/useKeyboard';
 import { useNow } from './hooks/useNow';
@@ -21,14 +23,17 @@ import { SceneCanvas } from './scene/SceneCanvas';
 import { derive } from './state/derive';
 import { useTimer } from './state/TimerContext';
 import { TimerProvider } from './state/TimerProvider';
+import { TodoProvider } from './state/TodoProvider';
 
-type Panel = 'history' | 'settings' | 'photos' | null;
+type Panel = 'todo' | 'history' | 'settings' | 'photos' | null;
 const DESKTOP = '(min-width: 900px)'; // 계절 버튼 줄(max-[900px]:hidden = 900 미만에서 숨김)과 같은 기준
 
 export default function App() {
   return (
     <TimerProvider>
-      <RidingScreen />
+      <TodoProvider>
+        <RidingScreen />
+      </TodoProvider>
     </TimerProvider>
   );
 }
@@ -220,13 +225,22 @@ function RidingScreen() {
       />
 
       {showTitle && !uiHidden && (
-        <TitleScreen onStart={() => setSetupOpen(true)} onPreview={togglePreview} />
+        <TitleScreen
+          onStart={() => setSetupOpen(true)}
+          onPreview={togglePreview}
+          onTodo={() => setPanel('todo')}
+        />
       )}
 
       {showRoute && <RouteBar cameraX={view.cameraX} toBanpo={view.toBanpo} />}
 
-      {/* 계절 바로 바꾸기: 집중, 휴식 중에만 (첫 화면, 미리보기, 완주엔 없음) */}
-      {!isSetup && !previewing && !done && !uiHidden && <SeasonDock />}
+      {/* 계절 바로 바꾸기, 할 일: 집중, 휴식 중에만 (첫 화면, 미리보기, 완주엔 없음) */}
+      {!isSetup && !previewing && !done && !uiHidden && (
+        <>
+          <SeasonDock />
+          {panel !== 'todo' && <TodoPeek onOpen={() => setPanel('todo')} />}
+        </>
+      )}
 
       {/* 미리보기 중엔 타이머 화면(설정 카드, 시계, 독, 완주 카드)을 모두 내린다 */}
       {previewing ? (
@@ -261,6 +275,7 @@ function RidingScreen() {
       )}
 
       {/* 팝업 창 */}
+      {panel === 'todo' && <TodoModal onClose={closePanel} />}
       {panel === 'history' && <HistoryModal onClose={closePanel} />}
       {panel === 'settings' && <SettingsModal onClose={closePanel} />}
       {panel === 'photos' && <PhotoModal name={photoName} onClose={closePanel} />}
