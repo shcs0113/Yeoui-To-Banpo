@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SKIP_LAPSE_MS, initState, timerReducer } from './timerReducer';
+import { SKIP_LAPSE_MS, initState, remainingAt, timerReducer } from './timerReducer';
 import type { TimerAction, TimerState } from './types';
 
 const MIN = 60_000;
@@ -202,21 +202,31 @@ describe('UPDATE_SETTINGS: 설정 변경', () => {
 });
 
 describe('SET_SPEED: 배속', () => {
-  it('달리는 중에는 바꿀 수 없다', () => {
+  it('달리는 중에 바꾸면 남은 가상 시간은 그대로, 끝나는 시각만 다시 잡는다', () => {
+    const s = timerReducer(started(0), { type: 'SET_SPEED', speed: 60, now: 10 * MIN });
+    expect(s.status).toBe('running');
+    expect(s.remainingMs).toBe(20_000); // 남은 20분 ÷ 60 = 20초
+    expect(s.durationMs).toBe(30_000);
+    expect(s.endAt).toBe(10 * MIN + 20_000);
+    // 화면에 보이는 남은 시간(가상): 20초 × 60 = 20분
+    expect(remainingAt(s, 10 * MIN) * s.speed).toBe(20 * MIN);
+  });
+
+  it('같은 배속이면 그대로', () => {
     const s = started(0);
-    expect(timerReducer(s, { type: 'SET_SPEED', speed: 60 })).toBe(s);
+    expect(timerReducer(s, { type: 'SET_SPEED', speed: 1, now: 5 * MIN })).toBe(s);
   });
 
   it('멈춘 상태에서 바꾸면 남은 가상 시간이 유지된다', () => {
     const paused = run(started(0), { type: 'PAUSE', now: 10 * MIN });
-    const s = timerReducer(paused, { type: 'SET_SPEED', speed: 60 });
+    const s = timerReducer(paused, { type: 'SET_SPEED', speed: 60, now: 15 * MIN });
     expect(s.speed).toBe(60);
     expect(s.remainingMs).toBe(20_000); // 20분 ÷ 60
     expect(s.durationMs).toBe(30_000);
   });
 
   it('출발 전에 바꾸면 다음 출발에 적용된다', () => {
-    const s = run(initState(), { type: 'SET_SPEED', speed: 10 }, { type: 'START', now: 0 });
+    const s = run(initState(), { type: 'SET_SPEED', speed: 10, now: 0 }, { type: 'START', now: 0 });
     expect(s.durationMs).toBe(3 * MIN);
   });
 });

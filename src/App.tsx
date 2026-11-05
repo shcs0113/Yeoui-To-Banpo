@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { AlphaSpeed } from './components/AlphaSpeed';
 import { FinishCard } from './components/FinishCard';
 import { FocusHud } from './components/FocusHud';
 import { HistoryModal } from './components/HistoryModal';
@@ -26,6 +27,7 @@ import { TimerProvider } from './state/TimerProvider';
 import { TodoProvider } from './state/TodoProvider';
 
 type Panel = 'todo' | 'history' | 'settings' | 'photos' | null;
+const ALPHA_TEST = true; // 알파 테스트용 배속 UI (주행 중 오른쪽 아래). 출시 전에 false로
 const DESKTOP = '(min-width: 900px)'; // 계절 버튼 줄(max-[900px]:hidden = 900 미만에서 숨김)과 같은 기준
 
 export default function App() {
@@ -239,6 +241,7 @@ function RidingScreen() {
         <>
           <SeasonDock />
           {panel !== 'todo' && <TodoPeek onOpen={() => setPanel('todo')} />}
+          {ALPHA_TEST && <AlphaSpeed />}
         </>
       )}
 

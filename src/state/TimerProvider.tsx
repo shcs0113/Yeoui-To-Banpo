@@ -100,7 +100,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       },
       toSetup: () => dispatch({ type: 'TO_SETUP' }),
       updateSettings: (patch) => dispatch({ type: 'UPDATE_SETTINGS', patch }),
-      setSpeed: (speed) => dispatch({ type: 'SET_SPEED', speed }),
+      setSpeed: (speed) => dispatch({ type: 'SET_SPEED', speed, now: Date.now() }),
     }),
     [state, autoStart, theme, effects, skyMode, skyPreset],
   );

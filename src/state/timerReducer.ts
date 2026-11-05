@@ -106,14 +106,17 @@ export function timerReducer(state: TimerState, action: TimerAction): TimerState
     }
 
     case 'SET_SPEED': {
-      // 달리는 중에는 못 바꿈. 멈춘 상태면 남은 "가상 시간"이 유지되도록 다시 계산
-      if (state.status === 'running' || action.speed === state.speed) return state;
+      // 남은 "가상 시간"이 그대로 유지되도록 실제 시간을 다시 계산 (달리는 중이어도 된다)
+      if (action.speed === state.speed) return state;
       const ratio = state.speed / action.speed;
+      const remainingMs = remainingAt(state, action.now) * ratio;
       return {
         ...state,
         speed: action.speed,
         durationMs: state.durationMs * ratio,
-        remainingMs: state.remainingMs * ratio,
+        remainingMs,
+        // 달리는 중이면 끝나는 시각을 새 배속에 맞춰 다시 잡는다 (5초 연출 중엔 endAt이 없다)
+        endAt: state.endAt === null ? null : action.now + remainingMs,
       };
     }
 

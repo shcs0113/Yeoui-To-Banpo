@@ -66,7 +66,7 @@ export interface TimerState {
 // 상태를 바꾸는 모든 요청
 export type TimerAction =
   | { type: 'UPDATE_SETTINGS'; patch: Partial<Settings> }
-  | { type: 'SET_SPEED'; speed: Speed }
+  | { type: 'SET_SPEED'; speed: Speed; now: number }
   | { type: 'START'; now: number }
   | { type: 'PAUSE'; now: number }
   | { type: 'RESUME'; now: number }
