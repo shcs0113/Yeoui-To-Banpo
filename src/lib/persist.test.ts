@@ -90,9 +90,13 @@ describe('toSession, restoreSession', () => {
     expect(resumed.endAt).toBe(120 * MIN);
   });
 
-  it('테스트 배속 주행은 남기지 않는다', () => {
-    const fast = timerReducer({ ...initState(), speed: 60 }, { type: 'START', now: 0 });
-    expect(toSession(fast, 1000)).toBeNull();
+  it('배속 주행 중이었으면 1배 기준 남은 시간으로 (다시 열면 1배, 일시정지)', () => {
+    const fast = timerReducer({ ...initState(), speed: 60 }, { type: 'START', now: 0 }); // 30분 = 실제 30초
+    const session = toSession(fast, 10_000); // 실제 10초 = 가상 10분 지남
+    expect(session).toMatchObject({ durationMs: 30 * MIN, remainingMs: 20 * MIN });
+
+    const restored = restoreSession(initState(), session);
+    expect(restored).toMatchObject({ speed: 1, status: 'paused', remainingMs: 20 * MIN });
   });
 
   it('휴식 건너뛰기 연출 중이었으면 그 휴식으로 (일시정지)', () => {

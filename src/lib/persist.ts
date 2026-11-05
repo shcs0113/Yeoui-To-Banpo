@@ -88,27 +88,27 @@ export function parseTodos(raw: unknown): Todo[] {
 
 // ---- 진행 중인 타이머 ----
 
-// 다시 열면 이어 달릴 구간. 달리던 중이었어도 일시정지로 돌아온다
+// 다시 열면 이어 달릴 구간. 달리던 중이었어도 일시정지로, 배속이었어도 1배로 돌아온다
 export interface Session {
   phase: 'focus' | 'break';
   status: 'idle' | 'paused'; // idle: 다음 사이클 출발선에서 대기 중이었음
   cycle: number;
-  durationMs: number;
-  remainingMs: number; // 닫힌 순간의 남은 시간 (닫혀 있던 동안은 흐르지 않는다)
+  durationMs: number; // 1배 기준 (배속 주행이었으면 가상 시간으로 바꿔 둔다)
+  remainingMs: number; // 닫힌 순간의 남은 시간, 1배 기준 (닫혀 있던 동안은 흐르지 않는다)
   startedAt: number | null;
 }
 
 // 지금 상태를 저장할 모양으로. 주행 중이 아니면(첫 화면, 완주) null = 지운다
 export function toSession(state: TimerState, now: number): Session | null {
-  if (state.speed !== 1) return null; // 테스트 배속 주행은 남기지 않는다 (배속은 저장 안 함)
   if (state.phase !== 'focus' && state.phase !== 'break' && state.phase !== 'lapse') return null;
   return {
     // 휴식 건너뛰기 5초 연출 중이었으면: 연출은 버리고 그 휴식으로 (다시 건너뛸 수 있다)
     phase: state.phase === 'focus' ? 'focus' : 'break',
     status: state.status === 'idle' ? 'idle' : 'paused',
     cycle: state.cycle,
-    durationMs: state.durationMs,
-    remainingMs: remainingAt(state, now),
+    // 배속은 저장하지 않아 다시 열면 1배: 실제 ms × 배속 = 1배로 같은 남은 시간(가상 시간)
+    durationMs: state.durationMs * state.speed,
+    remainingMs: remainingAt(state, now) * state.speed,
     startedAt: state.startedAt,
   };
 }
